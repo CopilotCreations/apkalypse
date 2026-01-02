@@ -202,6 +202,35 @@ if (-not $SkipAndroidSdk) {
                 Write-Host "    [OK] system image already installed" -ForegroundColor DarkGreen
             }
             
+            # Install build-tools (includes aapt and aapt2)
+            $buildToolsPath = Join-Path $AndroidSdkPath "build-tools\34.0.0"
+            $aapt2Path = Join-Path $buildToolsPath "aapt2.exe"
+            
+            if (-not (Test-Path $aapt2Path)) {
+                Write-Host "  Installing build-tools (includes aapt/aapt2)..." -ForegroundColor White
+                & $sdkmanagerPath "build-tools;34.0.0" 2>&1 | Out-Null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "    [OK] build-tools installed" -ForegroundColor Green
+                } else {
+                    Write-Host "    [WARN] build-tools installation may have issues" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "    [OK] build-tools already installed" -ForegroundColor DarkGreen
+            }
+            
+            # Add build-tools to PATH for aapt/aapt2
+            if (Test-Path $buildToolsPath) {
+                $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+                if ($currentPath -notlike "*$buildToolsPath*") {
+                    Write-Host "  Adding build-tools to PATH (aapt/aapt2)..." -ForegroundColor White
+                    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$buildToolsPath", "User")
+                    $env:Path = "$env:Path;$buildToolsPath"
+                    Write-Host "    [OK] Added build-tools to PATH" -ForegroundColor Green
+                } else {
+                    Write-Host "    [OK] build-tools already in PATH" -ForegroundColor DarkGreen
+                }
+            }
+            
             # Create APKalypse AVD if it doesn't exist
             $avdmanagerPath = Join-Path $cmdlineToolsPath "bin\avdmanager.bat"
             $avdPath = Join-Path $env:USERPROFILE ".android\avd\APKalypse_avd.avd"
@@ -238,6 +267,23 @@ if (-not $SkipPip) {
     # Refresh PATH to pick up newly installed Python
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
     
+    # Install project requirements if requirements.txt exists
+    $requirementsPath = Join-Path $PSScriptRoot "requirements.txt"
+    if (Test-Path $requirementsPath) {
+        Write-Host "  Installing project requirements from requirements.txt..." -ForegroundColor White
+        try {
+            $result = pip install -r $requirementsPath --quiet 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "    [OK] Project requirements installed successfully" -ForegroundColor Green
+            } else {
+                Write-Host "    [WARN] Some project requirements may have issues" -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "    [ERROR] Failed to install project requirements: $_" -ForegroundColor Red
+        }
+    }
+    
+    # Install additional tools not in requirements.txt
     $pipPackages = @(
         "frida-tools",
         "objection"
@@ -383,6 +429,7 @@ $tools = @(
     @{ Cmd = "java --version"; Name = "Java" },
     @{ Cmd = "python --version"; Name = "Python" },
     @{ Cmd = "adb --version"; Name = "ADB" },
+    @{ Cmd = "aapt2 version"; Name = "aapt2" },
     @{ Cmd = "jadx --version"; Name = "jadx" },
     @{ Cmd = "mitmproxy --version"; Name = "mitmproxy" },
     @{ Cmd = "frida --version"; Name = "Frida" },

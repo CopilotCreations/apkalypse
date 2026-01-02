@@ -133,10 +133,12 @@ class EmulatorSession:
 
         logger.info("Starting emulator", cmd=" ".join(cmd[:5]))
 
+        # Use DEVNULL for stdout/stderr to prevent pipe buffer blocking
+        # On Windows, piping without reading causes the child process to hang
         self.process = subprocess.Popen(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
 
         self.serial = f"emulator-{self.config.adb_port}"

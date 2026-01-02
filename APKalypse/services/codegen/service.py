@@ -6,12 +6,14 @@ Generates greenfield Android applications from architectural specifications.
 
 from __future__ import annotations
 
+import base64
 import re
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import httpx
 from pydantic import BaseModel, Field
 
 from ...agents import AgentContext, AndroidImplementationAgent
@@ -66,14 +68,16 @@ class CodegenService:
 
     def _create_root_build_gradle(self, project: AndroidProject) -> str:
         """Generate root build.gradle.kts content."""
+        # Use KSP version compatible with Kotlin 1.9.24
+        ksp_version = "1.9.24-1.0.20"
         return f'''// Top-level build file for {project.project_name}
 plugins {{
     id("com.android.application") version "{project.agp_version}" apply false
     id("com.android.library") version "{project.agp_version}" apply false
     id("org.jetbrains.kotlin.android") version "{project.kotlin_version}" apply false
     id("org.jetbrains.kotlin.plugin.serialization") version "{project.kotlin_version}" apply false
-    id("com.google.dagger.hilt.android") version "2.48" apply false
-    id("com.google.devtools.ksp") version "{project.kotlin_version}-1.0.16" apply false
+    id("com.google.dagger.hilt.android") version "2.51.1" apply false
+    id("com.google.devtools.ksp") version "{ksp_version}" apply false
 }}
 
 tasks.register("clean", Delete::class) {{
@@ -115,7 +119,7 @@ rootProject.name = "{project.project_name}"
 org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
 org.gradle.parallel=true
 org.gradle.caching=true
-org.gradle.configuration-cache=true
+org.gradle.configuration-cache=false
 
 # Android settings
 android.useAndroidX=true
@@ -127,7 +131,7 @@ kotlin.code.style=official
 kotlin.incremental=true
 
 # Compose settings
-kotlin.compiler.extension.version=1.5.8
+kotlin.compiler.extension.version=1.5.14
 '''
 
     def _create_module_build_gradle(self, module: GradleModule, package_name: str) -> str:
@@ -143,6 +147,8 @@ kotlin.compiler.extension.version=1.5.8
             app_id_line = f'applicationId = "{config.namespace}"' if is_app else ""
             version_code_line = f"versionCode = {config.version_code}" if is_app else ""
             version_name_line = f'versionName = "{config.version_name}"' if is_app else ""
+            # Only include targetSdk for app modules, not library modules
+            target_sdk_line = f"targetSdk = {config.target_sdk}" if is_app else ""
             
             android_block = f'''
 android {{
@@ -152,7 +158,7 @@ android {{
     defaultConfig {{
         {app_id_line}
         minSdk = {config.min_sdk}
-        targetSdk = {config.target_sdk}
+        {target_sdk_line}
         {version_code_line}
         {version_name_line}
 
@@ -240,20 +246,20 @@ dependencies {{
                 GradleDependency(group="androidx.lifecycle", artifact="lifecycle-runtime-ktx", version="2.6.2"),
                 GradleDependency(group="androidx.activity", artifact="activity-compose", version="1.8.2"),
 
-                # Compose
-                GradleDependency(group="androidx.compose", artifact="compose-bom", version="2024.01.00"),
-                GradleDependency(group="androidx.compose.ui", artifact="ui", version=""),
-                GradleDependency(group="androidx.compose.ui", artifact="ui-graphics", version=""),
-                GradleDependency(group="androidx.compose.ui", artifact="ui-tooling-preview", version=""),
-                GradleDependency(group="androidx.compose.material3", artifact="material3", version=""),
+                # Compose - use platform() for BOM
+                GradleDependency(group="androidx.compose", artifact="compose-bom", version="2024.01.00", is_platform=True),
+                GradleDependency(group="androidx.compose.ui", artifact="ui"),
+                GradleDependency(group="androidx.compose.ui", artifact="ui-graphics"),
+                GradleDependency(group="androidx.compose.ui", artifact="ui-tooling-preview"),
+                GradleDependency(group="androidx.compose.material3", artifact="material3"),
 
                 # Navigation
                 GradleDependency(group="androidx.navigation", artifact="navigation-compose", version="2.7.6"),
                 GradleDependency(group="androidx.hilt", artifact="hilt-navigation-compose", version="1.1.0"),
 
                 # Hilt
-                GradleDependency(group="com.google.dagger", artifact="hilt-android", version="2.48"),
-                GradleDependency(group="com.google.dagger", artifact="hilt-compiler", version="2.48", scope=DependencyScope.KSP),
+                GradleDependency(group="com.google.dagger", artifact="hilt-android", version="2.51.1"),
+                GradleDependency(group="com.google.dagger", artifact="hilt-compiler", version="2.51.1", scope=DependencyScope.KSP),
 
                 # ViewModel
                 GradleDependency(group="androidx.lifecycle", artifact="lifecycle-viewmodel-compose", version="2.6.2"),
@@ -281,10 +287,10 @@ dependencies {{
                 GradlePlugin(plugin_id="org.jetbrains.kotlin.android"),
             ],
             dependencies=[
-                GradleDependency(group="androidx.compose", artifact="compose-bom", version="2024.01.00"),
-                GradleDependency(group="androidx.compose.ui", artifact="ui", version=""),
-                GradleDependency(group="androidx.compose.material3", artifact="material3", version=""),
-                GradleDependency(group="androidx.compose.ui", artifact="ui-tooling-preview", version=""),
+                GradleDependency(group="androidx.compose", artifact="compose-bom", version="2024.01.00", is_platform=True),
+                GradleDependency(group="androidx.compose.ui", artifact="ui"),
+                GradleDependency(group="androidx.compose.material3", artifact="material3"),
+                GradleDependency(group="androidx.compose.ui", artifact="ui-tooling-preview"),
             ],
         )
 
@@ -307,8 +313,8 @@ dependencies {{
             dependencies=[
                 GradleDependency(group="javax.inject", artifact="javax.inject", version="1"),
                 GradleDependency(group="org.jetbrains.kotlinx", artifact="kotlinx-coroutines-core", version="1.7.3"),
-                GradleDependency(group="com.google.dagger", artifact="hilt-android", version="2.48"),
-                GradleDependency(group="com.google.dagger", artifact="hilt-compiler", version="2.48", scope=DependencyScope.KSP),
+                GradleDependency(group="com.google.dagger", artifact="hilt-android", version="2.51.1"),
+                GradleDependency(group="com.google.dagger", artifact="hilt-compiler", version="2.51.1", scope=DependencyScope.KSP),
             ],
             module_dependencies=[":core:data"],
         )
@@ -347,8 +353,8 @@ dependencies {{
                 GradleDependency(group="androidx.datastore", artifact="datastore-preferences", version="1.0.0"),
 
                 # Hilt
-                GradleDependency(group="com.google.dagger", artifact="hilt-android", version="2.48"),
-                GradleDependency(group="com.google.dagger", artifact="hilt-compiler", version="2.48", scope=DependencyScope.KSP),
+                GradleDependency(group="com.google.dagger", artifact="hilt-android", version="2.51.1"),
+                GradleDependency(group="com.google.dagger", artifact="hilt-compiler", version="2.51.1", scope=DependencyScope.KSP),
 
                 # Coroutines
                 GradleDependency(group="org.jetbrains.kotlinx", artifact="kotlinx-coroutines-core", version="1.7.3"),
@@ -954,12 +960,363 @@ class HomeViewModel @Inject constructor() : ViewModel() {{
             logger.error("Code generation failed", error=str(e))
             return ServiceResult.fail(str(e))
 
+    def _create_gradle_wrapper_properties(self, gradle_version: str) -> str:
+        """Generate gradle-wrapper.properties content."""
+        return f'''distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\\://services.gradle.org/distributions/gradle-{gradle_version}-bin.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+'''
+
+    def _create_gradlew_bat(self) -> str:
+        """Generate gradlew.bat content for Windows."""
+        return r'''@rem
+@rem Copyright 2015 the original author or authors.
+@rem
+@rem Licensed under the Apache License, Version 2.0 (the "License");
+@rem you may not use this file except in compliance with the License.
+@rem You may obtain a copy of the License at
+@rem
+@rem      https://www.apache.org/licenses/LICENSE-2.0
+@rem
+@rem Unless required by applicable law or agreed to in writing, software
+@rem distributed under the License is distributed on an "AS IS" BASIS,
+@rem WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+@rem See the License for the specific language governing permissions and
+@rem limitations under the License.
+@rem
+
+@if "%DEBUG%"=="" @echo off
+@rem ##########################################################################
+@rem
+@rem  Gradle startup script for Windows
+@rem
+@rem ##########################################################################
+
+@rem Set local scope for the variables with windows NT shell
+if "%OS%"=="Windows_NT" setlocal
+
+set DIRNAME=%~dp0
+if "%DIRNAME%"=="" set DIRNAME=.
+@rem This is normally unused
+set APP_BASE_NAME=%~n0
+set APP_HOME=%DIRNAME%
+
+@rem Resolve any "." and ".." in APP_HOME to make it shorter.
+for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
+
+@rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
+set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
+
+@rem Find java.exe
+if defined JAVA_HOME goto findJavaFromJavaHome
+
+set JAVA_EXE=java.exe
+%JAVA_EXE% -version >NUL 2>&1
+if %ERRORLEVEL% equ 0 goto execute
+
+echo. 1>&2
+echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH. 1>&2
+echo. 1>&2
+echo Please set the JAVA_HOME variable in your environment to match the 1>&2
+echo location of your Java installation. 1>&2
+
+goto fail
+
+:findJavaFromJavaHome
+set JAVA_HOME=%JAVA_HOME:"=%
+set JAVA_EXE=%JAVA_HOME%/bin/java.exe
+
+if exist "%JAVA_EXE%" goto execute
+
+echo. 1>&2
+echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME% 1>&2
+echo. 1>&2
+echo Please set the JAVA_HOME variable in your environment to match the 1>&2
+echo location of your Java installation. 1>&2
+
+goto fail
+
+:execute
+@rem Setup the command line
+
+set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
+
+
+@rem Execute Gradle
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
+
+:end
+@rem End local scope for the variables with windows NT shell
+if %ERRORLEVEL% equ 0 goto mainEnd
+
+:fail
+rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
+rem the _cmd.exe /c_ return code!
+set EXIT_CODE=%ERRORLEVEL%
+if %EXIT_CODE% equ 0 set EXIT_CODE=1
+if not ""=="%GRADLE_EXIT_CONSOLE%" exit %EXIT_CODE%
+exit /b %EXIT_CODE%
+
+:mainEnd
+if "%OS%"=="Windows_NT" endlocal
+
+:omega
+'''
+
+    def _create_gradlew(self) -> str:
+        """Generate gradlew shell script for Unix/Mac."""
+        return r'''#!/bin/sh
+
+#
+# Copyright © 2015-2021 the original authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+##############################################################################
+#
+#   Gradle start up script for POSIX generated by Gradle.
+#
+##############################################################################
+
+# Attempt to set APP_HOME
+
+# Resolve links: $0 may be a link
+app_path=$0
+
+# Need this for daisy-chained symlinks.
+while
+    APP_HOME=${app_path%"${app_path##*/}"}  # leaves a trailing /; empty if no leading path
+    [ -h "$app_path" ]
+do
+    ls=$( ls -ld "$app_path" )
+    link=${ls#*' -> '}
+    case $link in             #(
+      /*)   app_path=$link ;; #(
+      *)    app_path=$APP_HOME$link ;;
+    esac
+done
+
+# This is normally unused
+# shellcheck disable=SC2034
+APP_BASE_NAME=${0##*/}
+# Discard cd standard output in case $CDPATH is set (https://github.com/gradle/gradle/issues/25036)
+APP_HOME=$( cd "${APP_HOME:-./}" > /dev/null && pwd -P ) || exit
+
+# Use the maximum available, or set MAX_FD != -1 to use that value.
+MAX_FD=maximum
+
+warn () {
+    echo "$*"
+} >&2
+
+die () {
+    echo
+    echo "$*"
+    echo
+    exit 1
+} >&2
+
+# OS specific support (must be 'true' or 'false').
+cygwin=false
+msys=false
+darwin=false
+nonstop=false
+case "$( uname )" in                #(
+  CYGWIN* )         cygwin=true  ;; #(
+  Darwin* )         darwin=true  ;; #(
+  MSYS* | MINGW* )  msys=true    ;; #(
+  NONSTOP* )        nonstop=true ;;
+esac
+
+CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+
+
+# Determine the Java command to use to start the JVM.
+if [ -n "$JAVA_HOME" ] ; then
+    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+        # IBM's JDK on AIX uses strange locations for the executables
+        JAVACMD=$JAVA_HOME/jre/sh/java
+    else
+        JAVACMD=$JAVA_HOME/bin/java
+    fi
+    if [ ! -x "$JAVACMD" ] ; then
+        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+    fi
+else
+    JAVACMD=java
+    if ! command -v java >/dev/null 2>&1
+    then
+        die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation."
+    fi
+fi
+
+# Increase the maximum file descriptors if we can.
+if ! "$cygwin" && ! "$darwin" && ! "$nonstop" ; then
+    case $MAX_FD in #(
+      max*)
+        # In POSIX sh, ulimit -H is undefined. That's why the result is checked to see if it worked.
+        # shellcheck disable=SC2039,SC3045
+        MAX_FD=$( ulimit -H -n ) ||
+            warn "Could not query maximum file descriptor limit"
+    esac
+    case $MAX_FD in  #(
+      '' | soft) :;; #(
+      *)
+        # In POSIX sh, ulimit -n is undefined. That's why the result is checked to see if it worked.
+        # shellcheck disable=SC2039,SC3045
+        ulimit -n "$MAX_FD" ||
+            warn "Could not set maximum file descriptor limit to $MAX_FD"
+    esac
+fi
+
+# Collect all arguments for the java command, stacking in reverse order:
+#   * args from the command line
+#   * the main class name
+#   * -classpath
+#   * -D...appname settings
+#   * --module-path (only if needed)
+#   * DEFAULT_JVM_OPTS, JAVA_OPTS, and GRADLE_OPTS environment variables.
+
+# For Cygwin or MSYS, switch paths to Windows format before running java
+if "$cygwin" || "$msys" ; then
+    APP_HOME=$( cygpath --path --mixed "$APP_HOME" )
+    CLASSPATH=$( cygpath --path --mixed "$CLASSPATH" )
+
+    JAVACMD=$( cygpath --unix "$JAVACMD" )
+
+    # Now convert the arguments - kludge to limit ourselves to /bin/sh
+    for arg do
+        if
+            case $arg in                                #(
+              -*)   false ;;                            # don't mess with options #(
+              /?*)  t=${arg#)}; t=/${t%%/*}             # looks like a POSIX filepath
+                    [ -e "$t" ] ;;                      #(
+              *)    false ;;
+            esac
+        then
+            arg=$( cygpath --path --ignore --mixed "$arg" )
+        fi
+        # Roll the args list around exactly as many times as the number of
+        # temporary files created, so that any temporary files are moved
+        # to the start of the list.
+        shift                   # remove $arg
+        set -- "$@" "$arg"      # push $arg
+    done
+fi
+
+
+# Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
+DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+
+# Collect all arguments for the java command;
+#   * $DEFAULT_JVM_OPTS, $JAVA_OPTS, and $GRADLE_OPTS can contain fragments of
+#     temporary files with arguments, to simulate arrays.
+set -- \
+        "-Dorg.gradle.appname=$APP_BASE_NAME" \
+        -classpath "$CLASSPATH" \
+        org.gradle.wrapper.GradleWrapperMain \
+        "$@"
+
+# Stop when "xargs" is not available.
+if ! command -v xargs >/dev/null 2>&1
+then
+    die "xargs is not available"
+fi
+
+# Use "xargs" to parse quoted args.
+#
+# With -n://docs.gradle.org/8.0/dsl/org.gradle.api.tasks.Exec.html#org.gradle.api.tasks.Exec:args
+# * $DEFAULT_JVM_OPTS, $JAVA_OPTS, and $GRADLE_OPTS can contain fragments of
+#   shell script including quotes and variable substitutions, so put them in
+#   temporary files and run them via xargs so that the shell breaks them into
+#   arguments properly.
+eval "set -- $(
+        printf '%s\n' "$DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS" |
+        xargs -n1 |
+        sed ' s~[[:space:]]~\\\0~g; ' |
+        tr '\n' ' '
+        )" '"$@"'
+
+exec "$JAVACMD" "$@"
+'''
+
+    async def _download_gradle_wrapper_jar(self, gradle_version: str) -> bytes:
+        """Download the gradle-wrapper.jar from the official Gradle distribution.
+        
+        The gradle-wrapper.jar is bundled inside the Gradle distribution zip in the
+        lib/plugins/ directory as gradle-wrapper-{version}.jar. We download the 
+        distribution and extract it.
+        """
+        import zipfile
+        import io
+        
+        # Download the full Gradle distribution and extract the wrapper jar
+        dist_url = f"https://services.gradle.org/distributions/gradle-{gradle_version}-bin.zip"
+        
+        try:
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                response = await client.get(dist_url, follow_redirects=True)
+                if response.status_code == 200:
+                    # Extract gradle-wrapper.jar from the distribution zip
+                    with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
+                        # The wrapper jar is in lib/plugins/gradle-wrapper-{version}.jar
+                        wrapper_path = f"gradle-{gradle_version}/lib/plugins/gradle-wrapper-{gradle_version}.jar"
+                        try:
+                            return zf.read(wrapper_path)
+                        except KeyError:
+                            # Try alternative paths - in some versions it may be elsewhere
+                            for name in zf.namelist():
+                                if "gradle-wrapper" in name and name.endswith(".jar"):
+                                    logger.info(f"Found gradle-wrapper.jar at: {name}")
+                                    return zf.read(name)
+                            logger.warning(f"gradle-wrapper.jar not found in distribution zip")
+        except Exception as e:
+            logger.warning(f"Failed to download Gradle distribution: {e}")
+        
+        # Fallback: return empty - the project will need 'gradle wrapper' to be run
+        logger.warning("Could not download gradle-wrapper.jar, project will need 'gradle wrapper' to be run")
+        return b""
+
     async def _write_project_to_storage(self, project: AndroidProject, output_dir: str) -> None:
         """Write project files to storage."""
         # Root files
         await self.storage.store_text(f"{output_dir}/build.gradle.kts", project.root_build_gradle)
         await self.storage.store_text(f"{output_dir}/settings.gradle.kts", project.settings_gradle)
         await self.storage.store_text(f"{output_dir}/gradle.properties", project.gradle_properties)
+
+        # Gradle wrapper files
+        await self.storage.store_text(
+            f"{output_dir}/gradle/wrapper/gradle-wrapper.properties",
+            self._create_gradle_wrapper_properties(project.gradle_version)
+        )
+        await self.storage.store_text(f"{output_dir}/gradlew", self._create_gradlew())
+        await self.storage.store_text(f"{output_dir}/gradlew.bat", self._create_gradlew_bat())
+        
+        # Download and store gradle-wrapper.jar
+        wrapper_jar = await self._download_gradle_wrapper_jar(project.gradle_version)
+        if wrapper_jar:
+            await self.storage.store_bytes(f"{output_dir}/gradle/wrapper/gradle-wrapper.jar", wrapper_jar)
 
         # Module build files
         for module in project.modules:

@@ -7,6 +7,10 @@ Handles APK intake, normalization, hash computation, and provenance tracking.
 from __future__ import annotations
 
 import hashlib
+import re
+import subprocess
+import tempfile
+import xml.etree.ElementTree as ET
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -232,3 +236,151 @@ class IngestionService:
                 operation="ingest",
                 cause=e,
             )
+
+
+class QuickAPKInfo(BaseModel):
+    """Quick APK metadata extracted without full analysis."""
+
+    package_name: str = Field(description="Package name from AndroidManifest.xml")
+    app_name: str = Field(description="Application label or derived name")
+
+
+def extract_quick_apk_info(apk_path: Path) -> QuickAPKInfo:
+    """Extract package name and app name from APK without full decompilation.
+
+    This uses aapt2 if available, otherwise falls back to apktool or manual extraction.
+
+    Args:
+        apk_path: Path to the APK file
+
+    Returns:
+        QuickAPKInfo with package_name and app_name
+    """
+    import shutil
+
+    package_name = "unknown"
+    app_name = ""
+
+    # Try aapt2 first (fastest)
+    aapt2 = shutil.which("aapt2")
+    logger.info("Checking for aapt2", found=bool(aapt2), path=aapt2)
+    if aapt2:
+        try:
+            logger.info("Running aapt2 dump badging...")
+            result = subprocess.run(
+                [aapt2, "dump", "badging", str(apk_path)],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if result.returncode == 0:
+                logger.info("aapt2 succeeded")
+                output = result.stdout
+                # Extract package name
+                pkg_match = re.search(r"package:\s*name='([^']+)'", output)
+                if pkg_match:
+                    package_name = pkg_match.group(1)
+                # Extract application label
+                label_match = re.search(r"application-label:'([^']+)'", output)
+                if label_match:
+                    app_name = label_match.group(1)
+            else:
+                logger.warning("aapt2 failed", returncode=result.returncode, stderr=result.stderr[:200] if result.stderr else None)
+        except subprocess.TimeoutExpired:
+            logger.warning("aapt2 timed out after 30s")
+        except FileNotFoundError:
+            logger.warning("aapt2 not found")
+
+    # Try aapt if aapt2 didn't work
+    if package_name == "unknown":
+        aapt = shutil.which("aapt")
+        logger.info("Checking for aapt", found=bool(aapt), path=aapt)
+        if aapt:
+            try:
+                logger.info("Running aapt dump badging...")
+                result = subprocess.run(
+                    [aapt, "dump", "badging", str(apk_path)],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    logger.info("aapt succeeded")
+                    output = result.stdout
+                    pkg_match = re.search(r"package:\s*name='([^']+)'", output)
+                    if pkg_match:
+                        package_name = pkg_match.group(1)
+                    label_match = re.search(r"application-label:'([^']+)'", output)
+                    if label_match:
+                        app_name = label_match.group(1)
+                else:
+                    logger.warning("aapt failed", returncode=result.returncode, stderr=result.stderr[:200] if result.stderr else None)
+            except subprocess.TimeoutExpired:
+                logger.warning("aapt timed out after 30s")
+            except FileNotFoundError:
+                logger.warning("aapt not found")
+
+    # Fallback: try apktool decode + parse XML
+    if package_name == "unknown":
+        apktool = shutil.which("apktool")
+        logger.info("Checking for apktool", found=bool(apktool), path=apktool)
+        if apktool:
+            try:
+                logger.info("Running apktool decode (this may take a while)...")
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    temp_path = Path(temp_dir)
+                    result = subprocess.run(
+                        [apktool, "d", "-s", "-f", "-o", str(temp_path / "decoded"), str(apk_path)],
+                        capture_output=True,
+                        text=True,
+                        timeout=120,
+                    )
+                    if result.returncode == 0:
+                        logger.info("apktool decode succeeded")
+                        manifest_path = temp_path / "decoded" / "AndroidManifest.xml"
+                        if manifest_path.exists():
+                            package_name, app_name = _parse_manifest_quick(manifest_path, app_name)
+                    else:
+                        logger.warning("apktool decode failed", returncode=result.returncode, stderr=result.stderr[:200] if result.stderr else None)
+            except subprocess.TimeoutExpired:
+                logger.warning("apktool timed out after 120s")
+            except FileNotFoundError:
+                logger.warning("apktool not found")
+        else:
+            logger.warning("No APK extraction tools found (aapt2, aapt, or apktool)")
+
+    # Final fallback: derive app name from APK filename if still empty
+    if not app_name:
+        logger.info("Deriving app name from filename")
+        # Convert filename to readable app name
+        stem = apk_path.stem
+        # Remove common suffixes like version numbers, _signed, etc.
+        stem = re.sub(r'[_-]?(v?\d+[\d.]*|signed|release|debug|unsigned)$', '', stem, flags=re.IGNORECASE)
+        # Convert underscores/hyphens to spaces and title case
+        app_name = stem.replace('_', ' ').replace('-', ' ').title()
+
+    logger.info("APK info extraction complete", package_name=package_name, app_name=app_name)
+    return QuickAPKInfo(package_name=package_name, app_name=app_name)
+
+
+def _parse_manifest_quick(manifest_path: Path, existing_app_name: str) -> tuple[str, str]:
+    """Parse AndroidManifest.xml quickly for package name and app label."""
+    package_name = "unknown"
+    app_name = existing_app_name
+
+    try:
+        tree = ET.parse(manifest_path)
+        root = tree.getroot()
+        package_name = root.get("package", "unknown")
+
+        if not app_name:
+            ns = {"android": "http://schemas.android.com/apk/res/android"}
+            application = root.find("application")
+            if application is not None:
+                label = application.get(f"{{{ns['android']}}}label", "")
+                if label and not label.startswith("@"):
+                    app_name = label
+    except ET.ParseError:
+        pass
+
+    return package_name, app_name

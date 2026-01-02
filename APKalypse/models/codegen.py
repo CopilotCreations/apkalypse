@@ -32,17 +32,22 @@ class GradleDependency(BaseModel):
 
     group: str = Field(description="Group ID")
     artifact: str = Field(description="Artifact ID")
-    version: str = Field(description="Version")
+    version: str = Field(default="", description="Version (empty for BOM-managed deps)")
     scope: DependencyScope = Field(default=DependencyScope.IMPLEMENTATION)
+    is_platform: bool = Field(default=False, description="Whether this is a platform/BOM dependency")
     
     @property
     def notation(self) -> str:
         """Get Gradle dependency notation."""
-        return f'"{self.group}:{self.artifact}:{self.version}"'
+        if self.version:
+            return f'"{self.group}:{self.artifact}:{self.version}"'
+        return f'"{self.group}:{self.artifact}"'
 
     @property
     def declaration(self) -> str:
         """Get full Gradle declaration."""
+        if self.is_platform:
+            return f'{self.scope.value}(platform({self.notation}))'
         return f'{self.scope.value}({self.notation})'
 
 
@@ -77,8 +82,8 @@ class AndroidConfig(BaseModel):
     data_binding_enabled: bool = Field(default=False)
     build_config_enabled: bool = Field(default=True)
     
-    # Compose compiler
-    compose_compiler_version: str = Field(default="1.5.8")
+    # Compose compiler - must match Kotlin version (1.5.14 for Kotlin 1.9.24)
+    compose_compiler_version: str = Field(default="1.5.14")
     
     # Kotlin options
     jvm_target: str = Field(default="17")
@@ -272,10 +277,10 @@ class AndroidProject(BaseModel):
     package_name: str = Field(description="Base package name")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
-    # Gradle configuration
-    gradle_version: str = Field(default="8.5")
-    agp_version: str = Field(default="8.2.2")
-    kotlin_version: str = Field(default="1.9.22")
+    # Gradle configuration - AGP 8.5.0 supports Gradle 8.7-8.9 and 9.x
+    gradle_version: str = Field(default="8.9")
+    agp_version: str = Field(default="8.5.0")
+    kotlin_version: str = Field(default="1.9.24")
     
     # Modules
     modules: list[GradleModule] = Field(default_factory=list)

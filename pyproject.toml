@@ -25,6 +25,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "python-dotenv>=1.0.0",
     "pydantic>=2.5.0",
     "prefect>=2.14.0,<3.6.0",  # Pin to avoid websockets>=15 conflict with frida-tools
     "httpx>=0.25.0",

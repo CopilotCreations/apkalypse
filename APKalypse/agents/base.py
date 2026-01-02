@@ -218,7 +218,7 @@ class Agent(ABC, Generic[InputT, OutputT]):
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=temperature,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
                 response_format={"type": "json_object"},
             )
             return (

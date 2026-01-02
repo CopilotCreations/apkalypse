@@ -62,17 +62,17 @@ def run(
         dir_okay=False,
         resolve_path=True,
     ),
-    app_name: str = typer.Option(
-        ...,
+    app_name: Optional[str] = typer.Option(
+        None,
         "--name",
         "-n",
-        help="Name for the generated application",
+        help="Name for the generated application (auto-detected from APK if not provided)",
     ),
-    package_name: str = typer.Option(
-        ...,
+    package_name: Optional[str] = typer.Option(
+        None,
         "--package",
         "-p",
-        help="Package name for generated code (e.g., com.example.myapp)",
+        help="Package name for generated code (auto-detected from APK if not provided)",
     ),
     play_store_url: Optional[str] = typer.Option(
         None,
@@ -107,11 +107,26 @@ def run(
     Analyzes an APK file, extracts behavioral specifications,
     and generates a greenfield Android application.
     """
-    # Setup
+    # Setup logging early so extraction logs are visible
     config = get_config()
     if verbose:
         config.log_level = "DEBUG"
     setup_logging(config)
+
+    # Auto-detect app name and package from APK if not provided
+    if app_name is None or package_name is None:
+        from .services.ingestion.service import extract_quick_apk_info
+
+        console.print("[dim]Extracting metadata from APK...[/dim]")
+        apk_info = extract_quick_apk_info(apk_path)
+
+        if app_name is None:
+            app_name = apk_info.app_name
+            console.print(f"[dim]  → Detected app name: {app_name}[/dim]")
+
+        if package_name is None:
+            package_name = apk_info.package_name
+            console.print(f"[dim]  → Detected package: {package_name}[/dim]")
 
     console.print(Panel.fit(
         "[bold blue]APKalypse[/bold blue]\n"
