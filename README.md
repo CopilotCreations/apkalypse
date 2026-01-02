@@ -1,8 +1,9 @@
 # APKalypse
 
-**Automated APK Behavioral Analysis and Greenfield Android App Generation**
+Automated APK Behavioral Analysis and Greenfield Android App Generation
 
 APKalypse is a production-ready, end-to-end system that:
+
 - Takes a third-party Android app (APK + public metadata)
 - Extracts observable behavior (NOT source code reuse)
 - Produces formal, implementation-agnostic behavioral specifications
@@ -24,28 +25,28 @@ APKalypse is a production-ready, end-to-end system that:
 
 ## 🏗️ Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        APKalypse Pipeline                       │
+│                        APKalypse Pipeline                           │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐      │
-│  │ Ingestion│───▶│  Static  │───▶│ Dynamic  │───▶│ Behavior │      │
-│  │ Service  │    │ Analysis │    │ Analysis │    │  Model   │      │
-│  └──────────┘    └──────────┘    └──────────┘    └──────────┘      │
-│                                                         │            │
-│                                                         ▼            │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐      │
-│  │   Code   │◀───│  Arch    │◀───│   Spec   │◀───│ Behavior │      │
-│  │   Gen    │    │ Synthesis│    │Generation│    │  Model   │      │
-│  └──────────┘    └──────────┘    └──────────┘    └──────────┘      │
-│        │                                                             │
-│        ▼                                                             │
+│                                                                     │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐       │
+│  │ Ingestion│───>│  Static  │───>│ Dynamic  │───>│ Behavior │       │
+│  │ Service  │    │ Analysis │    │ Analysis │    │  Model   │       │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────┘       │
+│                                                         │           │
+│                                                         ▼           │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐       │
+│  │   Code   │<───│  Arch    │<───│   Spec   │<───│ Behavior │       │
+│  │   Gen    │    │ Synthesis│    │Generation│    │  Model   │       │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────┘       │
+│        │                                                            │
+│        ▼                                                            │
 │  ┌──────────┐    ┌──────────┐                                       │
-│  │ Verify   │───▶│Compliance│───▶ ✓ Greenfield Android App         │
+│  │ Verify   │───>│Compliance│───>  Greenfield Android App           │
 │  │ Parity   │    │  Guard   │                                       │
 │  └──────────┘    └──────────┘                                       │
-│                                                                      │
+│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -116,7 +117,7 @@ asyncio.run(main())
 Configuration is managed through environment variables:
 
 | Variable | Description | Default |
-|----------|-------------|---------|
+| -------- | ----------- | ------- |
 | `OPENAI_API_KEY` | OpenAI API key for agents | Required |
 | `ANTHROPIC_API_KEY` | Anthropic API key (alternative) | - |
 | `B2B_LOG_LEVEL` | Logging level | INFO |
@@ -129,12 +130,14 @@ Configuration is managed through environment variables:
 ## 📋 Pipeline Stages
 
 ### 1. Ingestion Service
+
 - Validates APK integrity
 - Computes cryptographic hashes (SHA-256, SHA-1, MD5)
 - Tracks provenance
 - Stores normalized inputs
 
 ### 2. Static Analysis Service
+
 - Extracts AndroidManifest.xml
 - Parses permissions, activities, services
 - Extracts layout hierarchies
@@ -142,6 +145,7 @@ Configuration is managed through environment variables:
 - **Does NOT persist decompiled source**
 
 ### 3. Dynamic Analysis Service
+
 - Boots Android emulator
 - Installs and launches APK
 - Automatically explores UI
@@ -150,6 +154,7 @@ Configuration is managed through environment variables:
 - Outputs state transition graphs
 
 ### 4. Behavior Model Builder
+
 - Merges static and dynamic analysis
 - Creates canonical screen representations
 - Infers navigation rules
@@ -157,6 +162,7 @@ Configuration is managed through environment variables:
 - Maps data flows
 
 ### 5. Spec Generation Agent
+
 - Consumes behavior model
 - Produces functional requirements
 - Produces non-functional requirements
@@ -164,24 +170,28 @@ Configuration is managed through environment variables:
 - Documents error handling
 
 ### 6. Architecture Agent
+
 - Designs module structure
 - Creates data flow diagrams
 - Makes technology decisions
 - Produces ADRs (Architecture Decision Records)
 
 ### 7. Code Generation Service
+
 - Generates greenfield Kotlin code
 - Uses Jetpack Compose for UI
 - Follows MVVM pattern
 - Produces buildable Gradle project
 
 ### 8. Verification Service
+
 - Validates screen coverage
 - Checks navigation implementation
 - Verifies architectural compliance
 - Produces parity report
 
 ### 9. Compliance Guard
+
 - Ensures no source code copying
 - Detects suspicious patterns
 - Enforces similarity thresholds
@@ -192,7 +202,7 @@ Configuration is managed through environment variables:
 The system uses five specialized AI agents:
 
 | Agent | Purpose | Read-Only |
-|-------|---------|-----------|
+| ----- | ------- | --------- |
 | Behavioral Observer | Interprets UI states | ✅ |
 | Product Spec Author | Writes specifications | ✅ |
 | System Architect | Designs architecture | ✅ |
@@ -200,6 +210,7 @@ The system uses five specialized AI agents:
 | QA Parity | Verifies behavior | ✅ |
 
 All agents:
+
 - Only see sanitized inputs (never decompiled source)
 - Have versioned, deterministic prompts
 - Include output validation
@@ -207,7 +218,7 @@ All agents:
 
 ## 📁 Generated Project Structure
 
-```
+```text
 generated/
 └── my-app/
     ├── build.gradle.kts
@@ -250,7 +261,7 @@ pytest tests/unit/test_models.py
 ## 📊 Output Artifacts
 
 | Artifact | Format | Description |
-|----------|--------|-------------|
+| -------- | ------ | ----------- |
 | `behavior_model.json` | JSON | Canonical behavioral model |
 | `behavioral_spec.json` | JSON | Product specification |
 | `architecture_spec.json` | JSON | Architecture design |
@@ -308,7 +319,7 @@ async def custom_pipeline(apk_path: Path):
 ## 🛠️ Technology Stack
 
 | Category | Technology | Version |
-|----------|------------|---------|
+| -------- | ---------- | ------- |
 | **Orchestration** | Prefect | 2.14+ |
 | **Data Validation** | Pydantic | 2.5+ |
 | **Static Analysis** | apktool, aapt2 | - |
@@ -321,6 +332,7 @@ async def custom_pipeline(apk_path: Path):
 ## 📝 Architecture Decision: Prefect vs Temporal
 
 We chose **Prefect** for orchestration because:
+
 - Simpler deployment (no separate server required for local use)
 - Native Python async support
 - Built-in retry and caching
@@ -328,6 +340,7 @@ We chose **Prefect** for orchestration because:
 - Better suited for pipeline-style workflows
 
 Temporal would be preferred for:
+
 - Long-running workflows (hours/days)
 - Complex compensation/rollback logic
 - Multi-service coordination
