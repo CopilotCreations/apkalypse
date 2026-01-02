@@ -1,0 +1,203 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://behavior2build.dev/schemas/behavioral-spec.json",
+  "title": "Behavioral Specification",
+  "description": "Implementation-agnostic product specification",
+  "type": "object",
+  "required": ["spec_version", "spec_id", "app_name", "source_behavior_model_id"],
+  "properties": {
+    "spec_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "spec_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "app_name": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "executive_summary": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "functional_requirements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/FunctionalRequirement" }
+    },
+    "non_functional_requirements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/NonFunctionalRequirement" }
+    },
+    "screen_specs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ScreenSpec" }
+    },
+    "error_handling": { "$ref": "#/$defs/ErrorHandlingSpec" },
+    "source_behavior_model_id": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "FunctionalRequirement": {
+      "type": "object",
+      "required": ["req_id", "title", "description"],
+      "properties": {
+        "req_id": { "type": "string", "pattern": "^FR-\\d{3}$" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "priority": { 
+          "type": "string",
+          "enum": ["must", "should", "could", "wont"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "approved", "implemented", "verified"]
+        },
+        "derived_from_screens": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "derived_from_intents": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "category": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "NonFunctionalRequirement": {
+      "type": "object",
+      "required": ["req_id", "title", "description", "category"],
+      "properties": {
+        "req_id": { "type": "string", "pattern": "^NFR-\\d{3}$" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["performance", "security", "usability", "reliability", "maintainability", "portability", "accessibility", "scalability"]
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["must", "should", "could", "wont"]
+        },
+        "metric": { "type": ["string", "null"] },
+        "target_value": { "type": ["string", "null"] },
+        "test_approach": { "type": "string" }
+      }
+    },
+    "ScreenSpec": {
+      "type": "object",
+      "required": ["screen_id", "screen_name", "description"],
+      "properties": {
+        "screen_id": { "type": "string" },
+        "screen_name": { "type": "string" },
+        "description": { "type": "string" },
+        "layout_type": { "type": "string" },
+        "components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/UIComponentSpec" }
+        },
+        "entry_points": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "exit_points": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "state_properties": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "loading_states": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "error_states": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "implements_requirements": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "UIComponentSpec": {
+      "type": "object",
+      "required": ["component_id", "component_type", "name"],
+      "properties": {
+        "component_id": { "type": "string" },
+        "component_type": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "visual_style": { "type": "string" },
+        "interactions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "states": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "data_bindings": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "content_description": { "type": ["string", "null"] },
+        "accessibility_role": { "type": ["string", "null"] }
+      }
+    },
+    "ErrorHandlingSpec": {
+      "type": "object",
+      "properties": {
+        "global_error_handler": { "type": "string" },
+        "error_cases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ErrorCase" }
+        },
+        "log_errors": { "type": "boolean" },
+        "error_reporting_endpoint": { "type": ["string", "null"] },
+        "offline_error_message": { "type": "string" },
+        "offline_retry_strategy": { "type": "string" }
+      }
+    },
+    "ErrorCase": {
+      "type": "object",
+      "required": ["error_id", "error_type", "user_message"],
+      "properties": {
+        "error_id": { "type": "string" },
+        "error_type": { "type": "string" },
+        "trigger_conditions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "user_message": { "type": "string" },
+        "recovery_actions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "is_recoverable": { "type": "boolean" },
+        "retry_strategy": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://behavior2build.dev/schemas/architecture-spec.json",
+  "title": "Architecture Specification",
+  "description": "Technical architecture specification for Android application",
+  "type": "object",
+  "required": ["spec_version", "spec_id", "architecture_pattern", "modules", "source_behavioral_spec_id"],
+  "properties": {
+    "spec_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "spec_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "architecture_pattern": {
+      "type": "string",
+      "enum": ["MVVM", "MVI", "MVP"]
+    },
+    "architecture_rationale": {
+      "type": "string"
+    },
+    "modules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ModuleDefinition" }
+    },
+    "data_flow_diagrams": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/DataFlowDiagram" }
+    },
+    "technology_decisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/TechnologyDecision" }
+    },
+    "adrs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ArchitectureDecisionRecord" }
+    },
+    "security_considerations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "threat_model": {
+      "type": "object"
+    },
+    "source_behavioral_spec_id": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "ModuleDefinition": {
+      "type": "object",
+      "required": ["module_id", "module_name", "module_type"],
+      "properties": {
+        "module_id": { "type": "string" },
+        "module_name": { "type": "string" },
+        "module_type": {
+          "type": "string",
+          "enum": ["app", "feature", "core", "data", "domain", "ui", "common"]
+        },
+        "description": { "type": "string" },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "responsibilities": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "public_api": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "suggested_packages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "key_classes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "DataFlowDiagram": {
+      "type": "object",
+      "required": ["diagram_id", "name"],
+      "properties": {
+        "diagram_id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["node_id", "node_type", "name"],
+            "properties": {
+              "node_id": { "type": "string" },
+              "node_type": { "type": "string" },
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from_node", "to_node", "data_type"],
+            "properties": {
+              "from_node": { "type": "string" },
+              "to_node": { "type": "string" },
+              "data_type": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "TechnologyDecision": {
+      "type": "object",
+      "required": ["decision_id", "category", "choices"],
+      "properties": {
+        "decision_id": { "type": "string" },
+        "category": { "type": "string" },
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["technology", "purpose", "rationale"],
+            "properties": {
+              "technology": { "type": "string" },
+              "version": { "type": "string" },
+              "purpose": { "type": "string" },
+              "rationale": { "type": "string" },
+              "alternatives_considered": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "ArchitectureDecisionRecord": {
+      "type": "object",
+      "required": ["adr_id", "title", "context", "decision"],
+      "properties": {
+        "adr_id": { "type": "string", "pattern": "^ADR-\\d{3}$" },
+        "title": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "status": {
+          "type": "string",
+          "enum": ["proposed", "accepted", "deprecated", "superseded"]
+        },
+        "context": { "type": "string" },
+        "decision": { "type": "string" },
+        "consequences": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "related_requirements": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "supersedes": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

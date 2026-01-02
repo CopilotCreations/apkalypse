@@ -1,0 +1,226 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://behavior2build.dev/schemas/behavior-model.json",
+  "title": "Behavior Model",
+  "description": "Complete behavioral specification of an Android application",
+  "type": "object",
+  "required": ["model_version", "model_id", "app_package", "screens"],
+  "properties": {
+    "model_version": {
+      "type": "string",
+      "description": "Schema version for migrations",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "model_id": {
+      "type": "string",
+      "description": "Unique model identifier",
+      "format": "uuid"
+    },
+    "app_package": {
+      "type": "string",
+      "description": "Original app package name"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "screens": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ScreenModel" }
+    },
+    "transitions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/StateTransition" }
+    },
+    "navigation_rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/NavigationRule" }
+    },
+    "user_intents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/UserIntent" }
+    },
+    "data_flows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/DataFlow" }
+    },
+    "entry_screen_id": {
+      "type": ["string", "null"]
+    },
+    "auth_required": {
+      "type": "boolean"
+    },
+    "offline_capable": {
+      "type": "boolean"
+    },
+    "total_screens": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "total_transitions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "total_user_intents": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "coverage_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "$defs": {
+    "ScreenModel": {
+      "type": "object",
+      "required": ["screen_id", "screen_name"],
+      "properties": {
+        "screen_id": { "type": "string" },
+        "screen_name": { "type": "string" },
+        "activity_name": { "type": ["string", "null"] },
+        "title": { "type": ["string", "null"] },
+        "description": { "type": "string" },
+        "root_elements": { "type": "array" },
+        "interactive_elements": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "has_navigation": { "type": "boolean" },
+        "has_app_bar": { "type": "boolean" },
+        "has_fab": { "type": "boolean" },
+        "has_tabs": { "type": "boolean" },
+        "is_dialog": { "type": "boolean" },
+        "is_bottom_sheet": { "type": "boolean" },
+        "screenshot_hash": { "type": ["string", "null"] },
+        "discovered_at": { "type": "string", "format": "date-time" },
+        "discovery_method": { "type": "string" }
+      }
+    },
+    "StateTransition": {
+      "type": "object",
+      "required": ["transition_id", "from_screen_id", "to_screen_id", "triggered_by_action"],
+      "properties": {
+        "transition_id": { "type": "string" },
+        "from_screen_id": { "type": "string" },
+        "to_screen_id": { "type": "string" },
+        "triggered_by_action": { "$ref": "#/$defs/UserAction" },
+        "transition_type": { "type": "string" },
+        "animation_type": { "type": ["string", "null"] },
+        "side_effects": { "type": "array" },
+        "requires_authentication": { "type": "boolean" },
+        "requires_permissions": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requires_network": { "type": "boolean" },
+        "observed_count": { "type": "integer" },
+        "average_duration_ms": { "type": "number" }
+      }
+    },
+    "UserAction": {
+      "type": "object",
+      "required": ["action_id", "action_type", "source_screen_id"],
+      "properties": {
+        "action_id": { "type": "string" },
+        "action_type": { 
+          "type": "string",
+          "enum": ["tap", "long_press", "swipe", "scroll", "type_text", "back", "home", "menu", "permission_grant", "permission_deny", "notification_tap", "deep_link"]
+        },
+        "target_element_id": { "type": ["string", "null"] },
+        "text_input": { "type": ["string", "null"] },
+        "swipe_direction": { "type": ["string", "null"] },
+        "coordinates": { 
+          "type": ["array", "null"],
+          "items": { "type": "number" }
+        },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "duration_ms": { "type": "integer" },
+        "source_screen_id": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "NavigationRule": {
+      "type": "object",
+      "required": ["rule_id", "name", "from_screens", "to_screen"],
+      "properties": {
+        "rule_id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "from_screens": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "to_screen": { "type": "string" },
+        "trigger_conditions": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "guard_conditions": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "is_back_navigation": { "type": "boolean" },
+        "is_deep_link": { "type": "boolean" },
+        "deep_link_pattern": { "type": ["string", "null"] }
+      }
+    },
+    "UserIntent": {
+      "type": "object",
+      "required": ["intent_id", "name", "description"],
+      "properties": {
+        "intent_id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "required_screens": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "required_actions": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "preconditions": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "success_indicators": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "failure_indicators": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "is_primary": { "type": "boolean" },
+        "estimated_frequency": { 
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        }
+      }
+    },
+    "DataFlow": {
+      "type": "object",
+      "required": ["flow_id", "name", "source_type", "source_id", "destination_type", "destination_id"],
+      "properties": {
+        "flow_id": { "type": "string" },
+        "name": { "type": "string" },
+        "source_type": { "type": "string" },
+        "source_id": { "type": "string" },
+        "destination_type": { "type": "string" },
+        "destination_id": { "type": "string" },
+        "data_type": { "type": "string" },
+        "is_sensitive": { "type": "boolean" },
+        "is_persisted": { "type": "boolean" },
+        "transformations": { 
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
