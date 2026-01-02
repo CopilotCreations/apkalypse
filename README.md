@@ -55,12 +55,44 @@ APKalypse is a production-ready, end-to-end system that:
 ### Prerequisites
 
 - Python 3.11+
-- Android SDK (for static/dynamic analysis)
+- Java 17+ (required for jadx and apktool)
+- Android SDK with platform-tools (for static/dynamic analysis)
 - Optional: Android Emulator (for dynamic analysis)
 
-### Install
+See [PREREQUISITES.md](PREREQUISITES.md) for detailed requirements.
+
+### Quick Install (Windows)
+
+Run the automated prerequisites installer (requires Administrator for winget):
+
+```powershell
+# Install all prerequisites (Java, Python, Android tools, jadx, apktool, etc.)
+.\install-prerequisites.ps1
+
+# Optional flags:
+#   -SkipWinget    Skip winget installations
+#   -SkipPip       Skip pip installations (frida-tools, objection)
+#   -SkipApktool   Skip apktool download
+#   -ApktoolPath   Custom apktool install path (default: C:\apktool)
+```
+
+The script installs:
+- **Java 17** (OpenJDK via winget)
+- **Python 3.11** (via winget)
+- **Android Platform Tools** (adb, fastboot via winget)
+- **jadx** (DEX to Java decompiler via winget)
+- **mitmproxy** (network traffic capture via winget)
+- **apktool** (APK decompilation via direct download)
+- **frida-tools** (dynamic instrumentation via pip)
+- **objection** (runtime mobile exploration via pip)
+
+### Manual Install
 
 ```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install package in development mode
 pip install -e .
 ```
 
@@ -68,6 +100,20 @@ pip install -e .
 
 ```bash
 pip install -e ".[dev]"
+```
+
+### Environment Variables
+
+After installation, set the required environment variables:
+
+```powershell
+# Required: Set at least one LLM API key
+$env:OPENAI_API_KEY = "your-openai-key"
+# OR
+$env:ANTHROPIC_API_KEY = "your-anthropic-key"
+
+# Optional: Android SDK path (if not using default)
+$env:ANDROID_SDK_ROOT = "C:\Android"
 ```
 
 ## 🚀 Quick Start
