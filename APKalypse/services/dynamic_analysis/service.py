@@ -149,6 +149,12 @@ class EmulatorSession:
         """Wait for emulator to boot."""
         timeout = self.config.boot_timeout_seconds
         start = asyncio.get_event_loop().time()
+        
+        logger.info(
+            "Waiting for emulator to boot (first run may take longer than usual)",
+            serial=self.serial,
+            timeout_seconds=timeout,
+        )
 
         while asyncio.get_event_loop().time() - start < timeout:
             try:
@@ -158,7 +164,7 @@ class EmulatorSession:
                     return
             except Exception:
                 pass
-            await asyncio.sleep(2)
+            await asyncio.sleep(5)
 
         raise EmulatorError(
             message="Emulator boot timeout",

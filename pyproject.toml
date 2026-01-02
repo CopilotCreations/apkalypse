@@ -26,7 +26,7 @@ classifiers = [
 
 dependencies = [
     "pydantic>=2.5.0",
-    "prefect>=2.14.0",
+    "prefect>=2.14.0,<3.6.0",  # Pin to avoid websockets>=15 conflict with frida-tools
     "httpx>=0.25.0",
     "aiofiles>=23.2.0",
     "rich>=13.7.0",
@@ -42,6 +42,7 @@ dependencies = [
     "typer>=0.9.0",
     "tenacity>=8.2.3",
     "eval-type-backport>=0.1.3",
+    "websockets>=13.0.0,<14.0.0",  # Pin for frida-tools compatibility
 ]
 
 [project.optional-dependencies]

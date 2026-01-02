@@ -125,9 +125,10 @@ if (-not $SkipAndroidSdk) {
             $AndroidSdkPath = $currentSdkRoot
         }
         
-        # Add platform-tools and cmdline-tools to PATH
+        # Add platform-tools, cmdline-tools, and emulator to PATH
         $platformToolsPath = Join-Path $AndroidSdkPath "platform-tools"
         $cmdlineToolsBinPath = Join-Path $cmdlineToolsPath "bin"
+        $emulatorBinPath = Join-Path $AndroidSdkPath "emulator"
         
         $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
         $pathsToAdd = @()
@@ -137,6 +138,9 @@ if (-not $SkipAndroidSdk) {
         }
         if ($currentPath -notlike "*$cmdlineToolsBinPath*") {
             $pathsToAdd += $cmdlineToolsBinPath
+        }
+        if ($currentPath -notlike "*$emulatorBinPath*") {
+            $pathsToAdd += $emulatorBinPath
         }
         
         if ($pathsToAdd.Count -gt 0) {
@@ -168,6 +172,56 @@ if (-not $SkipAndroidSdk) {
                 }
             } else {
                 Write-Host "    [OK] platform-tools already installed" -ForegroundColor DarkGreen
+            }
+            
+            # Install emulator and system image for AVD
+            $emulatorPath = Join-Path $AndroidSdkPath "emulator\emulator.exe"
+            $systemImagePath = Join-Path $AndroidSdkPath "system-images\android-34\google_apis\x86_64"
+            
+            if (-not (Test-Path $emulatorPath)) {
+                Write-Host "  Installing emulator via sdkmanager..." -ForegroundColor White
+                & $sdkmanagerPath "emulator" 2>&1 | Out-Null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "    [OK] emulator installed" -ForegroundColor Green
+                } else {
+                    Write-Host "    [WARN] emulator installation may have issues" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "    [OK] emulator already installed" -ForegroundColor DarkGreen
+            }
+            
+            if (-not (Test-Path $systemImagePath)) {
+                Write-Host "  Installing system image (android-34, google_apis, x86_64)..." -ForegroundColor White
+                & $sdkmanagerPath "system-images;android-34;google_apis;x86_64" 2>&1 | Out-Null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "    [OK] system image installed" -ForegroundColor Green
+                } else {
+                    Write-Host "    [WARN] system image installation may have issues" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "    [OK] system image already installed" -ForegroundColor DarkGreen
+            }
+            
+            # Create APKalypse AVD if it doesn't exist
+            $avdmanagerPath = Join-Path $cmdlineToolsPath "bin\avdmanager.bat"
+            $avdPath = Join-Path $env:USERPROFILE ".android\avd\APKalypse_avd.avd"
+            
+            if (Test-Path $avdmanagerPath) {
+                if (-not (Test-Path $avdPath)) {
+                    Write-Host "  Creating APKalypse_avd Android Virtual Device..." -ForegroundColor White
+                    
+                    # Create AVD with echo to provide input for prompts
+                    $createAvdResult = echo "no" | & $avdmanagerPath create avd -n APKalypse_avd -k "system-images;android-34;google_apis;x86_64" -d "pixel" --force 2>&1
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "    [OK] APKalypse_avd created successfully" -ForegroundColor Green
+                    } else {
+                        Write-Host "    [WARN] AVD creation may have issues: $createAvdResult" -ForegroundColor Yellow
+                    }
+                } else {
+                    Write-Host "    [OK] APKalypse_avd already exists" -ForegroundColor DarkGreen
+                }
+            } else {
+                Write-Host "    [WARN] avdmanager not found, cannot create AVD" -ForegroundColor Yellow
             }
         }
         

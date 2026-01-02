@@ -28,7 +28,7 @@ class EmulatorConfig(BaseModel):
         default="system-images;android-33;google_apis;x86_64",
         description="System image for emulator",
     )
-    headless: bool = Field(default=True, description="Run emulator without display")
+    headless: bool = Field(default=False, description="Run emulator without display")
     gpu: Literal["auto", "host", "swiftshader_indirect", "off"] = Field(
         default="swiftshader_indirect", description="GPU acceleration mode"
     )
