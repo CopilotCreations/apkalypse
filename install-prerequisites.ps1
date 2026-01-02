@@ -13,8 +13,10 @@ param(
     [switch]$SkipPip,
     [switch]$SkipApktool,
     [switch]$SkipJadx,
+    [switch]$SkipAndroidSdk,
     [string]$ApktoolPath = "C:\apktool",
-    [string]$JadxPath = "C:\jadx"
+    [string]$JadxPath = "C:\jadx",
+    [string]$AndroidSdkPath = "$env:LOCALAPPDATA\Android\Sdk"
 )
 
 $ErrorActionPreference = "Continue"
@@ -55,6 +57,122 @@ if (-not $SkipWinget) {
         } catch {
             Write-Host "    [ERROR] Failed to install $($pkg.Name): $_" -ForegroundColor Red
         }
+    }
+}
+#endregion
+
+#region Android SDK Installation
+if (-not $SkipAndroidSdk) {
+    Write-Host "`n[ANDROID SDK] Setting up Android SDK..." -ForegroundColor Green
+    
+    try {
+        # Create Android SDK directory
+        if (-not (Test-Path $AndroidSdkPath)) {
+            New-Item -ItemType Directory -Path $AndroidSdkPath -Force | Out-Null
+            Write-Host "  Created directory: $AndroidSdkPath" -ForegroundColor White
+        }
+        
+        # Download Android Command Line Tools if not present
+        $cmdlineToolsPath = Join-Path $AndroidSdkPath "cmdline-tools\latest"
+        $sdkmanagerPath = Join-Path $cmdlineToolsPath "bin\sdkmanager.bat"
+        
+        if (-not (Test-Path $sdkmanagerPath)) {
+            Write-Host "  Downloading Android Command Line Tools..." -ForegroundColor White
+            $cmdlineToolsUrl = "https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip"
+            $cmdlineToolsZip = Join-Path $env:TEMP "commandlinetools.zip"
+            $cmdlineToolsExtract = Join-Path $env:TEMP "cmdline-tools-extract"
+            
+            Invoke-WebRequest -Uri $cmdlineToolsUrl -OutFile $cmdlineToolsZip -UseBasicParsing
+            
+            # Extract to temp folder first
+            if (Test-Path $cmdlineToolsExtract) {
+                Remove-Item $cmdlineToolsExtract -Recurse -Force
+            }
+            Expand-Archive -Path $cmdlineToolsZip -DestinationPath $cmdlineToolsExtract -Force
+            
+            # Move to correct location (cmdline-tools/latest)
+            $cmdlineToolsParent = Join-Path $AndroidSdkPath "cmdline-tools"
+            if (-not (Test-Path $cmdlineToolsParent)) {
+                New-Item -ItemType Directory -Path $cmdlineToolsParent -Force | Out-Null
+            }
+            
+            $extractedFolder = Join-Path $cmdlineToolsExtract "cmdline-tools"
+            if (Test-Path $extractedFolder) {
+                if (Test-Path $cmdlineToolsPath) {
+                    Remove-Item $cmdlineToolsPath -Recurse -Force
+                }
+                Move-Item -Path $extractedFolder -Destination $cmdlineToolsPath -Force
+            }
+            
+            # Cleanup
+            Remove-Item $cmdlineToolsZip -Force -ErrorAction SilentlyContinue
+            Remove-Item $cmdlineToolsExtract -Recurse -Force -ErrorAction SilentlyContinue
+            
+            Write-Host "    [OK] Android Command Line Tools installed" -ForegroundColor Green
+        } else {
+            Write-Host "    [OK] Android Command Line Tools already installed" -ForegroundColor DarkGreen
+        }
+        
+        # Set ANDROID_SDK_ROOT environment variable
+        $currentSdkRoot = [Environment]::GetEnvironmentVariable("ANDROID_SDK_ROOT", "User")
+        if (-not $currentSdkRoot) {
+            Write-Host "  Setting ANDROID_SDK_ROOT environment variable..." -ForegroundColor White
+            [Environment]::SetEnvironmentVariable("ANDROID_SDK_ROOT", $AndroidSdkPath, "User")
+            $env:ANDROID_SDK_ROOT = $AndroidSdkPath
+            Write-Host "    [OK] ANDROID_SDK_ROOT set to $AndroidSdkPath" -ForegroundColor Green
+        } else {
+            Write-Host "    [OK] ANDROID_SDK_ROOT already set to $currentSdkRoot" -ForegroundColor DarkGreen
+            $AndroidSdkPath = $currentSdkRoot
+        }
+        
+        # Add platform-tools and cmdline-tools to PATH
+        $platformToolsPath = Join-Path $AndroidSdkPath "platform-tools"
+        $cmdlineToolsBinPath = Join-Path $cmdlineToolsPath "bin"
+        
+        $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+        $pathsToAdd = @()
+        
+        if ($currentPath -notlike "*$platformToolsPath*") {
+            $pathsToAdd += $platformToolsPath
+        }
+        if ($currentPath -notlike "*$cmdlineToolsBinPath*") {
+            $pathsToAdd += $cmdlineToolsBinPath
+        }
+        
+        if ($pathsToAdd.Count -gt 0) {
+            $newPath = $currentPath + ";" + ($pathsToAdd -join ";")
+            [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+            $env:Path = "$env:Path;" + ($pathsToAdd -join ";")
+            Write-Host "    [OK] Added Android SDK paths to PATH" -ForegroundColor Green
+        } else {
+            Write-Host "    [OK] Android SDK paths already in PATH" -ForegroundColor DarkGreen
+        }
+        
+        # Accept licenses and install platform-tools if sdkmanager exists
+        if (Test-Path $sdkmanagerPath) {
+            # Check if platform-tools is already installed
+            $adbPath = Join-Path $platformToolsPath "adb.exe"
+            if (-not (Test-Path $adbPath)) {
+                Write-Host "  Installing platform-tools via sdkmanager..." -ForegroundColor White
+                
+                # Accept licenses
+                $licenseAccept = "y`ny`ny`ny`ny`ny`ny`n"
+                $licenseAccept | & $sdkmanagerPath --licenses 2>&1 | Out-Null
+                
+                # Install platform-tools
+                & $sdkmanagerPath "platform-tools" 2>&1 | Out-Null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "    [OK] platform-tools installed" -ForegroundColor Green
+                } else {
+                    Write-Host "    [WARN] platform-tools installation may have issues" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "    [OK] platform-tools already installed" -ForegroundColor DarkGreen
+            }
+        }
+        
+    } catch {
+        Write-Host "  [ERROR] Failed to setup Android SDK: $_" -ForegroundColor Red
     }
 }
 #endregion
@@ -236,7 +354,8 @@ Write-Host "`n[NEXT STEPS]" -ForegroundColor Cyan
 $envChecks = @(
     @{ Name = "ANDROID_SDK_ROOT"; Required = $true },
     @{ Name = "OPENAI_API_KEY"; Required = $false },
-    @{ Name = "ANTHROPIC_API_KEY"; Required = $false }
+    @{ Name = "ANTHROPIC_API_KEY"; Required = $false },
+    @{ Name = "AZURE_OPENAI_API_KEY"; Required = $false }
 )
 
 $hasApiKey = $false
@@ -262,7 +381,7 @@ foreach ($env in $envChecks) {
 }
 
 if (-not $hasApiKey) {
-    Write-Host "`n  [WARN] No API key found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY" -ForegroundColor Yellow
+    Write-Host "`n  [WARN] No API key found. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or AZURE_OPENAI_API_KEY" -ForegroundColor Yellow
 }
 
 # Check for .env file in project directory
