@@ -172,18 +172,31 @@ class EmulatorSession:
             raise EmulatorError(message="adb not initialized", avd_name=self.config.avd_name)
 
         cmd = [str(self.adb_path), "-s", self.serial, *args]
+        cmd_str = " ".join(cmd)
+        logger.debug("Running adb command", command=cmd_str)
+        
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await proc.communicate()
+        stdout_str = stdout.decode()
+        stderr_str = stderr.decode()
+        
         if proc.returncode != 0:
+            logger.warning("adb command failed", command=cmd_str, stderr=stderr_str[:500])
             raise EmulatorError(
-                message=f"adb command failed: {stderr.decode()}",
+                message=f"adb command failed: {stderr_str}",
                 avd_name=self.config.avd_name,
             )
-        return stdout.decode()
+        
+        if len(stdout_str) < 500:
+            logger.debug("adb command completed", output=stdout_str)
+        else:
+            logger.debug("adb command completed", output_len=len(stdout_str))
+        
+        return stdout_str
 
     async def install_apk(self, apk_path: Path) -> None:
         """Install APK on emulator."""

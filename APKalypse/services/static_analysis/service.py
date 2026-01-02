@@ -111,31 +111,62 @@ class StaticAnalysisService:
         )
 
     async def _run_command(self, cmd: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
-        """Run a shell command asynchronously."""
+        """Run a shell command asynchronously with real-time output logging."""
+        cmd_str = " ".join(cmd)
+        logger.info("Running command", command=cmd_str, cwd=str(cwd) if cwd else None)
+        
         process = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=cwd,
         )
-        stdout, stderr = await process.communicate()
-        return process.returncode or 0, stdout.decode("utf-8", errors="replace"), stderr.decode("utf-8", errors="replace")
+        
+        stdout_lines: list[str] = []
+        stderr_lines: list[str] = []
+        
+        async def read_stream(stream: asyncio.StreamReader, lines: list[str], stream_name: str) -> None:
+            while True:
+                line = await stream.readline()
+                if not line:
+                    break
+                decoded = line.decode("utf-8", errors="replace").rstrip()
+                lines.append(decoded)
+                logger.info(f"[{stream_name}] {decoded}")
+        
+        # Read stdout and stderr concurrently for real-time output
+        await asyncio.gather(
+            read_stream(process.stdout, stdout_lines, "stdout"),  # type: ignore
+            read_stream(process.stderr, stderr_lines, "stderr"),  # type: ignore
+        )
+        
+        await process.wait()
+        stdout_str = "\n".join(stdout_lines)
+        stderr_str = "\n".join(stderr_lines)
+        
+        logger.info("Command completed", returncode=process.returncode or 0, stdout_lines=len(stdout_lines), stderr_lines=len(stderr_lines))
+        
+        return process.returncode or 0, stdout_str, stderr_str
 
     async def _decompile_apk(self, apk_path: Path, output_dir: Path) -> None:
         """Decompile APK using apktool (resources only, no source)."""
         try:
             apktool = self._find_tool("apktool")
+            logger.info("Found apktool", path=str(apktool))
         except ToolNotFoundError:
             logger.warning("apktool not found, using fallback extraction")
             await self._fallback_extract(apk_path, output_dir)
             return
 
+        logger.info("Starting APK decompilation", apk=str(apk_path), output=str(output_dir))
         cmd = [str(apktool), "d", "-f", "-s", str(apk_path), "-o", str(output_dir)]
         returncode, stdout, stderr = await self._run_command(cmd)
 
         if returncode != 0:
             logger.warning("apktool failed, using fallback", stderr=stderr[:500])
             await self._fallback_extract(apk_path, output_dir)
+        else:
+            logger.info("APK decompilation completed successfully")
 
     async def _fallback_extract(self, apk_path: Path, output_dir: Path) -> None:
         """Fallback extraction using zipfile (limited but always works)."""
