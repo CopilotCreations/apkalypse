@@ -40,9 +40,12 @@ class EmulatorConfig(BaseModel):
 class AgentConfig(BaseModel):
     """LLM agent configuration."""
 
-    provider: Literal["openai", "anthropic"] = Field(
+    provider: Literal["openai", "anthropic", "azure_openai"] = Field(
         default="openai", description="LLM provider"
     )
+    # Azure OpenAI specific settings
+    azure_endpoint: str | None = Field(default=None, description="Azure OpenAI endpoint URL")
+    azure_api_version: str = Field(default="2024-02-15-preview", description="Azure OpenAI API version")
     model: str = Field(default="gpt-4o", description="Model identifier")
     temperature: float = Field(default=0.1, ge=0.0, le=2.0, description="Sampling temperature")
     max_tokens: int = Field(default=8192, ge=256, description="Max output tokens")
@@ -124,6 +127,9 @@ class Config(BaseModel):
     anthropic_api_key: SecretStr | None = Field(
         default_factory=lambda: SecretStr(os.environ.get("ANTHROPIC_API_KEY", "")) or None
     )
+    azure_openai_api_key: SecretStr | None = Field(
+        default_factory=lambda: SecretStr(os.environ.get("AZURE_OPENAI_API_KEY", "")) or None
+    )
 
     model_config = {"extra": "ignore"}
 
@@ -140,6 +146,8 @@ class Config(BaseModel):
                 provider=os.environ.get("B2B_AGENT_PROVIDER", "openai"),  # type: ignore
                 model=os.environ.get("B2B_AGENT_MODEL", "gpt-4o"),
                 temperature=float(os.environ.get("B2B_AGENT_TEMPERATURE", "0.1")),
+                azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
+                azure_api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-15-preview"),
             ),
             storage=StorageConfig(
                 base_path=Path(os.environ.get("B2B_OUTPUT_PATH", "./output")),

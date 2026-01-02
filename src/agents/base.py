@@ -178,6 +178,12 @@ class Agent(ABC, Generic[InputT, OutputT]):
         elif self.config.provider == "anthropic":
             import anthropic
             self._client = anthropic.AsyncAnthropic()
+        elif self.config.provider == "azure_openai":
+            import openai
+            self._client = openai.AsyncAzureOpenAI(
+                azure_endpoint=self.config.azure_endpoint,
+                api_version=self.config.azure_api_version,
+            )
         else:
             raise AgentError(
                 message=f"Unknown provider: {self.config.provider}",
@@ -199,7 +205,7 @@ class Agent(ABC, Generic[InputT, OutputT]):
         temperature = context.temperature_override or self.config.temperature
         max_tokens = context.max_tokens_override or self.config.max_tokens
 
-        if self.config.provider == "openai":
+        if self.config.provider == "openai" or self.config.provider == "azure_openai":
             response = await client.chat.completions.create(
                 model=self.config.model,
                 messages=[
