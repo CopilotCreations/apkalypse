@@ -2,6 +2,7 @@
 # Install with: pip install -r requirements.txt
 
 # Core dependencies
+python-dotenv>=1.0.0
 pydantic>=2.5.0
 prefect>=2.14.0
 httpx>=0.25.0

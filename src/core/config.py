@@ -12,7 +12,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field, SecretStr
+
+# Load .env file if it exists (looks in cwd and parent directories)
+load_dotenv()
 
 
 class EmulatorConfig(BaseModel):

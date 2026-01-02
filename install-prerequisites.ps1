@@ -12,7 +12,9 @@ param(
     [switch]$SkipWinget,
     [switch]$SkipPip,
     [switch]$SkipApktool,
-    [string]$ApktoolPath = "C:\apktool"
+    [switch]$SkipJadx,
+    [string]$ApktoolPath = "C:\apktool",
+    [string]$JadxPath = "C:\jadx"
 )
 
 $ErrorActionPreference = "Continue"
@@ -35,8 +37,7 @@ if (-not $SkipWinget) {
     $wingetPackages = @(
         @{ Id = "Microsoft.OpenJDK.17"; Name = "OpenJDK 17" },
         @{ Id = "Google.PlatformTools"; Name = "Android Platform Tools" },
-        @{ Id = "Skylot.jadx"; Name = "jadx" },
-        @{ Id = "mitmproxy"; Name = "mitmproxy" },
+        @{ Id = "mitmproxy.mitmproxy"; Name = "mitmproxy" },
         @{ Id = "Python.Python.3.11"; Name = "Python 3.11" }
     )
     
@@ -86,6 +87,59 @@ if (-not $SkipPip) {
 }
 #endregion
 
+#region jadx Installation (Direct Download)
+if (-not $SkipJadx) {
+    Write-Host "`n[JADX] Installing jadx via direct download..." -ForegroundColor Green
+    
+    try {
+        # Create jadx directory
+        if (-not (Test-Path $JadxPath)) {
+            New-Item -ItemType Directory -Path $JadxPath -Force | Out-Null
+            Write-Host "  Created directory: $JadxPath" -ForegroundColor White
+        }
+        
+        # Download and extract jadx (skip if cached)
+        $jadxBinPath = Join-Path $JadxPath "bin"
+        $jadxExePath = Join-Path $jadxBinPath "jadx.bat"
+        if (Test-Path $jadxExePath) {
+            Write-Host "    [OK] jadx already cached" -ForegroundColor DarkGreen
+        } else {
+            Write-Host "  Fetching latest jadx release..." -ForegroundColor White
+            $releaseInfo = Invoke-RestMethod -Uri "https://api.github.com/repos/skylot/jadx/releases/latest" -UseBasicParsing
+            $zipAsset = $releaseInfo.assets | Where-Object { $_.name -match "^jadx-[\d\.]+\.zip$" } | Select-Object -First 1
+            
+            if ($zipAsset) {
+                $zipUrl = $zipAsset.browser_download_url
+                $zipPath = Join-Path $env:TEMP "jadx.zip"
+                Write-Host "  Downloading $($zipAsset.name)..." -ForegroundColor White
+                Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+                Write-Host "  Extracting jadx..." -ForegroundColor White
+                Expand-Archive -Path $zipPath -DestinationPath $JadxPath -Force
+                Remove-Item $zipPath -Force
+                Write-Host "    [OK] Installed jadx (v$($releaseInfo.tag_name))" -ForegroundColor Green
+            } else {
+                Write-Host "    [ERROR] Could not find jadx zip in latest release" -ForegroundColor Red
+            }
+        }
+        
+        # Add bin folder to PATH if not already there
+        if (Test-Path $jadxBinPath) {
+            $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+            if ($currentPath -notlike "*$jadxBinPath*") {
+                Write-Host "  Adding $jadxBinPath to user PATH..." -ForegroundColor White
+                [Environment]::SetEnvironmentVariable("Path", "$currentPath;$jadxBinPath", "User")
+                $env:Path = "$env:Path;$jadxBinPath"
+                Write-Host "    [OK] Added to PATH (restart terminal to take effect)" -ForegroundColor Green
+            } else {
+                Write-Host "    [OK] $jadxBinPath already in PATH" -ForegroundColor DarkGreen
+            }
+        }
+    } catch {
+        Write-Host "  [ERROR] Failed to install jadx: $_" -ForegroundColor Red
+    }
+}
+#endregion
+
 #region Apktool Installation (Direct Download)
 if (-not $SkipApktool) {
     Write-Host "`n[APKTOOL] Installing apktool via direct download..." -ForegroundColor Green
@@ -97,26 +151,34 @@ if (-not $SkipApktool) {
             Write-Host "  Created directory: $ApktoolPath" -ForegroundColor White
         }
         
-        # Download apktool wrapper script
+        # Download apktool wrapper script (skip if cached)
         $wrapperUrl = "https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/windows/apktool.bat"
         $wrapperPath = Join-Path $ApktoolPath "apktool.bat"
-        Write-Host "  Downloading apktool.bat..." -ForegroundColor White
-        Invoke-WebRequest -Uri $wrapperUrl -OutFile $wrapperPath -UseBasicParsing
-        Write-Host "    [OK] Downloaded apktool.bat" -ForegroundColor Green
-        
-        # Get latest apktool.jar release URL from GitHub API
-        Write-Host "  Fetching latest apktool.jar release..." -ForegroundColor White
-        $releaseInfo = Invoke-RestMethod -Uri "https://api.github.com/repos/iBotPeaches/Apktool/releases/latest" -UseBasicParsing
-        $jarAsset = $releaseInfo.assets | Where-Object { $_.name -match "apktool_.*\.jar$" } | Select-Object -First 1
-        
-        if ($jarAsset) {
-            $jarUrl = $jarAsset.browser_download_url
-            $jarPath = Join-Path $ApktoolPath "apktool.jar"
-            Write-Host "  Downloading $($jarAsset.name)..." -ForegroundColor White
-            Invoke-WebRequest -Uri $jarUrl -OutFile $jarPath -UseBasicParsing
-            Write-Host "    [OK] Downloaded apktool.jar (v$($releaseInfo.tag_name))" -ForegroundColor Green
+        if (Test-Path $wrapperPath) {
+            Write-Host "    [OK] apktool.bat already cached" -ForegroundColor DarkGreen
         } else {
-            Write-Host "    [ERROR] Could not find apktool.jar in latest release" -ForegroundColor Red
+            Write-Host "  Downloading apktool.bat..." -ForegroundColor White
+            Invoke-WebRequest -Uri $wrapperUrl -OutFile $wrapperPath -UseBasicParsing
+            Write-Host "    [OK] Downloaded apktool.bat" -ForegroundColor Green
+        }
+        
+        # Get latest apktool.jar release URL from GitHub API (skip if cached)
+        $jarPath = Join-Path $ApktoolPath "apktool.jar"
+        if (Test-Path $jarPath) {
+            Write-Host "    [OK] apktool.jar already cached" -ForegroundColor DarkGreen
+        } else {
+            Write-Host "  Fetching latest apktool.jar release..." -ForegroundColor White
+            $releaseInfo = Invoke-RestMethod -Uri "https://api.github.com/repos/iBotPeaches/Apktool/releases/latest" -UseBasicParsing
+            $jarAsset = $releaseInfo.assets | Where-Object { $_.name -match "apktool_.*\.jar$" } | Select-Object -First 1
+            
+            if ($jarAsset) {
+                $jarUrl = $jarAsset.browser_download_url
+                Write-Host "  Downloading $($jarAsset.name)..." -ForegroundColor White
+                Invoke-WebRequest -Uri $jarUrl -OutFile $jarPath -UseBasicParsing
+                Write-Host "    [OK] Downloaded apktool.jar (v$($releaseInfo.tag_name))" -ForegroundColor Green
+            } else {
+                Write-Host "    [ERROR] Could not find apktool.jar in latest release" -ForegroundColor Red
+            }
         }
         
         # Add to PATH if not already there
@@ -169,11 +231,60 @@ foreach ($tool in $tools) {
 }
 
 Write-Host "`n[NEXT STEPS]" -ForegroundColor Cyan
+
+# Check environment variables
+$envChecks = @(
+    @{ Name = "ANDROID_SDK_ROOT"; Required = $true },
+    @{ Name = "OPENAI_API_KEY"; Required = $false },
+    @{ Name = "ANTHROPIC_API_KEY"; Required = $false }
+)
+
+$hasApiKey = $false
+$missingEnvVars = @()
+
+foreach ($env in $envChecks) {
+    $value = [Environment]::GetEnvironmentVariable($env.Name, "User")
+    if (-not $value) {
+        $value = [Environment]::GetEnvironmentVariable($env.Name, "Machine")
+    }
+    
+    if ($value) {
+        Write-Host "  [OK] $($env.Name) is set" -ForegroundColor Green
+        if ($env.Name -match "API_KEY") { $hasApiKey = $true }
+    } else {
+        if ($env.Required) {
+            Write-Host "  [--] $($env.Name) is not set (required)" -ForegroundColor Yellow
+            $missingEnvVars += $env.Name
+        } else {
+            Write-Host "  [--] $($env.Name) is not set (optional)" -ForegroundColor DarkGray
+        }
+    }
+}
+
+if (-not $hasApiKey) {
+    Write-Host "`n  [WARN] No API key found. Set OPENAI_API_KEY or ANTHROPIC_API_KEY" -ForegroundColor Yellow
+}
+
+# Check for .env file in project directory
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$envFile = Join-Path $scriptDir ".env"
+$envExample = Join-Path $scriptDir ".env.example"
+
+if (Test-Path $envFile) {
+    Write-Host "`n  [OK] .env file found in project directory" -ForegroundColor Green
+} elseif (Test-Path $envExample) {
+    Write-Host "`n  [TIP] Copy .env.example to .env and configure your environment:" -ForegroundColor Cyan
+    Write-Host "        Copy-Item '$envExample' '$envFile'" -ForegroundColor Gray
+}
+
+Write-Host "`n[REMAINING STEPS]" -ForegroundColor Cyan
 Write-Host "  1. Restart your terminal to refresh PATH" -ForegroundColor White
-Write-Host "  2. Set ANDROID_SDK_ROOT environment variable" -ForegroundColor White
-Write-Host "  3. Set OPENAI_API_KEY or ANTHROPIC_API_KEY" -ForegroundColor White
-Write-Host "  4. Run 'pip install -r requirements.txt' in the project directory" -ForegroundColor White
-Write-Host "  5. For full Android SDK, download Command Line Tools from:" -ForegroundColor White
+if ($missingEnvVars.Count -gt 0) {
+    Write-Host "  2. Set missing environment variables: $($missingEnvVars -join ', ')" -ForegroundColor White
+    Write-Host "     Or configure them in a .env file" -ForegroundColor Gray
+}
+Write-Host "  3. Run 'pip install -r requirements.txt' in the project directory" -ForegroundColor White
+Write-Host "  4. For full Android SDK, download Command Line Tools from:" -ForegroundColor White
 Write-Host "     https://developer.android.com/studio#cmdline-tools" -ForegroundColor Gray
 Write-Host ""
 #endregion
