@@ -59,7 +59,7 @@ APKalypse = "APKalypse.cli:main"
 b2b = "APKalypse.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["APKalypse"]
 
 [tool.ruff]
 line-length = 100

@@ -10,31 +10,31 @@ APKalypse is a multi-stage pipeline that transforms Android APK files into green
 2. **Synthesizing a modern architecture** based on the behavioral model
 3. **Generating clean Kotlin/Compose code** that replicates functionality without copying source
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           APKalypse System                              │
+│                           APKalypse System                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
+│                                                                             │
 │   ┌───────────────────────────────────────────────────────────────────┐     │
 │   │                        Orchestration Layer                        │     │
 │   │                          (Prefect Flows)                          │     │
 │   └───────────────────────────────────────────────────────────────────┘     │
-│                                    │                                         │
-│   ┌────────────┬────────────┬─────┴────────┬─────────────┬────────────┐    │
+│                                   │                                         │
+│   ┌────────────┬────────────┬─────┴─────────┬─────────────┬────────────┐    │
 │   │   Analysis │  Modeling  │ Specification │ Generation  │ Validation │    │
 │   │   Services │  Services  │   Services    │  Services   │  Services  │    │
-│   └────────────┴────────────┴──────────────┴─────────────┴────────────┘    │
-│                                    │                                         │
+│   └────────────┴────────────┴───────────────┴─────────────┴────────────┘    │
+│                                    │                                        │
 │   ┌───────────────────────────────────────────────────────────────────┐     │
 │   │                          Agent Layer                              │     │
 │   │         (AI-powered interpretation and generation)                │     │
 │   └───────────────────────────────────────────────────────────────────┘     │
-│                                    │                                         │
+│                                    │                                        │
 │   ┌───────────────────────────────────────────────────────────────────┐     │
 │   │                         Storage Layer                             │     │
 │   │              (Artifact persistence and retrieval)                 │     │
 │   └───────────────────────────────────────────────────────────────────┘     │
-│                                                                              │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -45,16 +45,19 @@ APKalypse is a multi-stage pipeline that transforms Android APK files into green
 The orchestration layer manages the pipeline execution using **Prefect** for workflow management.
 
 **Key Components:**
+
 - `pipeline.py` - Main flow definition (`APKalypse_flow`)
 - `tasks.py` - Individual task wrappers for each service
 
 **Responsibilities:**
+
 - Sequencing pipeline stages
 - Handling retries and error recovery
 - Logging and observability
 - Result persistence between stages
 
 **Design Decisions:**
+
 - Prefect was chosen over Temporal for simpler deployment and native Python async support
 - Each task is idempotent and can be retried independently
 
@@ -75,6 +78,7 @@ Services encapsulate the core business logic for each pipeline stage.
 | `ComplianceGuard` | Legal compliance checking | `check()` |
 
 **Service Contract:**
+
 ```python
 async def operation(input: ServiceInput) -> ServiceResult[ServiceOutput]:
     # All services follow this pattern
@@ -86,7 +90,8 @@ async def operation(input: ServiceInput) -> ServiceResult[ServiceOutput]:
 AI agents handle complex interpretation and generation tasks that require reasoning.
 
 **Base Architecture:**
-```
+
+```text
 Agent[InputT, OutputT]
     ├── BehavioralObserverAgent   - Interprets UI states
     ├── ProductSpecAuthorAgent    - Writes specifications
@@ -96,6 +101,7 @@ Agent[InputT, OutputT]
 ```
 
 **Agent Features:**
+
 - Type-safe inputs/outputs via Pydantic models
 - Automatic retry with exponential backoff
 - Versioned, deterministic prompts
@@ -107,6 +113,7 @@ Agent[InputT, OutputT]
 Abstracted storage backend for artifact persistence.
 
 **Interface:**
+
 ```python
 class StorageBackend(ABC):
     async def store_bytes(key, data, metadata) -> str
@@ -118,12 +125,13 @@ class StorageBackend(ABC):
 ```
 
 **Implementations:**
+
 - `LocalStorageBackend` - File system storage (default)
 - Extensible for S3, GCS, etc.
 
 ## Data Flow
 
-```
+```text
 APK File ──┐
            ▼
     ┌──────────────┐
@@ -185,6 +193,7 @@ APK File ──┐
 ### 1. Legal Safety First
 
 The system is architecturally designed to prevent source code copying:
+
 - Decompiled source is **never persisted** to storage
 - Analysis outputs are **derived observations**, not code copies
 - Similarity detection prevents generated code from matching original
@@ -193,6 +202,7 @@ The system is architecturally designed to prevent source code copying:
 ### 2. Separation of Concerns
 
 Each layer has distinct responsibilities:
+
 - **Orchestration** - Flow control only
 - **Services** - Business logic
 - **Agents** - AI-powered reasoning
@@ -201,6 +211,7 @@ Each layer has distinct responsibilities:
 ### 3. Type Safety
 
 All data flowing through the system is validated via Pydantic models:
+
 - Compile-time type checking
 - Runtime validation
 - Self-documenting schemas
@@ -208,6 +219,7 @@ All data flowing through the system is validated via Pydantic models:
 ### 4. Observability
 
 Built-in logging and tracing:
+
 - Structured logging via structlog
 - Pipeline stage timing
 - Token usage tracking for AI agents
@@ -215,7 +227,7 @@ Built-in logging and tracing:
 
 ## Module Structure
 
-```
+```text
 APKalypse/
 ├── src/
 │   ├── agents/           # AI agent implementations
