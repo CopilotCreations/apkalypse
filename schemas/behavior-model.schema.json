@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://behavior2build.dev/schemas/behavior-model.json",
+  "$id": "https://APKalypse.dev/schemas/behavior-model.json",
   "title": "Behavior Model",
   "description": "Complete behavioral specification of an Android application",
   "type": "object",

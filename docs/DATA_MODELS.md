@@ -1,6 +1,6 @@
 # Data Models
 
-This document describes the core data models used throughout the Behavior2Build pipeline.
+This document describes the core data models used throughout the APKalypse pipeline.
 
 ## Model Organization
 
@@ -672,7 +672,7 @@ JSON schemas are provided in `schemas/` for validation:
 Pydantic models can export JSON schemas:
 
 ```python
-from behavior2build.models.behavior import BehaviorModel
+from APKalypse.models.behavior import BehaviorModel
 
 schema = BehaviorModel.model_json_schema()
 ```

@@ -1,4 +1,4 @@
-"""Test configuration for Behavior2Build."""
+"""Test configuration for APKalypse."""
 
 import pytest
 import asyncio

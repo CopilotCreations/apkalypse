@@ -1,12 +1,12 @@
 # AI Agents
 
-This document describes the AI agent system used in Behavior2Build for complex reasoning and generation tasks.
+This document describes the AI agent system used in APKalypse for complex reasoning and generation tasks.
 
 ## Agent Architecture
 
 ### Overview
 
-Behavior2Build uses five specialized AI agents to handle tasks that require semantic understanding and creative generation. Each agent is:
+APKalypse uses five specialized AI agents to handle tasks that require semantic understanding and creative generation. Each agent is:
 
 - **Type-safe**: Inputs and outputs are Pydantic models
 - **Deterministic**: Versioned prompts with hash tracking
@@ -488,7 +488,7 @@ Every agent invocation records:
 ### Creating a Custom Agent
 
 ```python
-from behavior2build.agents import Agent, PromptTemplate
+from APKalypse.agents import Agent, PromptTemplate
 
 class CustomAgent(Agent[MyInput, MyOutput]):
     
@@ -531,7 +531,7 @@ class CustomAgent(Agent[MyInput, MyOutput]):
 ### Registering Custom Agent
 
 ```python
-from behavior2build.agents import AgentRegistry
+from APKalypse.agents import AgentRegistry
 
 registry = AgentRegistry()
 registry.register(CustomAgent())

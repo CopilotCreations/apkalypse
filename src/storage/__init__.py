@@ -1,4 +1,4 @@
-"""Storage abstraction for Behavior2Build."""
+"""Storage abstraction for APKalypse."""
 
 from .interface import StorageBackend
 from .local import LocalStorageBackend

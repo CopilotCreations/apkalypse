@@ -1,5 +1,5 @@
 """
-Structured logging configuration for Behavior2Build.
+Structured logging configuration for APKalypse.
 
 Uses structlog for structured, context-rich logging that supports both human-readable
 console output and JSON format for production/CI environments.

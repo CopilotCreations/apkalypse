@@ -1,6 +1,6 @@
-# Behavior2Build Documentation
+# APKalypse Documentation
 
-Welcome to the Behavior2Build documentation. This folder contains detailed technical documentation about the system architecture, pipeline stages, and implementation details.
+Welcome to the APKalypse documentation. This folder contains detailed technical documentation about the system architecture, pipeline stages, and implementation details.
 
 ## Documentation Index
 
@@ -63,7 +63,7 @@ Welcome to the Behavior2Build documentation. This folder contains detailed techn
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Behavior2Build Pipeline                       │
+│                        APKalypse Pipeline                       │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐      │

@@ -1,5 +1,5 @@
 """
-Behavior2Build Data Models.
+APKalypse Data Models.
 
 This module contains all Pydantic models used throughout the pipeline for
 type-safe, versioned data representation. These models define the canonical

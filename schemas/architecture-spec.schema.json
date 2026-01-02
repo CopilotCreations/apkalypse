@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://behavior2build.dev/schemas/architecture-spec.json",
+  "$id": "https://APKalypse.dev/schemas/architecture-spec.json",
   "title": "Architecture Specification",
   "description": "Technical architecture specification for Android application",
   "type": "object",

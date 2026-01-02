@@ -1,5 +1,5 @@
 """
-Prefect tasks for the Behavior2Build pipeline.
+Prefect tasks for the APKalypse pipeline.
 
 Each task wraps a service operation with proper error handling,
 logging, and result persistence.

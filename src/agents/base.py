@@ -92,7 +92,7 @@ class PromptTemplate:
 
 
 class Agent(ABC, Generic[InputT, OutputT]):
-    """Base class for all Behavior2Build agents.
+    """Base class for all APKalypse agents.
 
     Agents are stateless, type-safe wrappers around LLM invocations with
     automatic retry logic, output validation, and comprehensive logging.

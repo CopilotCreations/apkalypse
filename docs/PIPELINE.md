@@ -1,6 +1,6 @@
 # Pipeline Stages
 
-This document provides detailed information about each stage of the Behavior2Build pipeline.
+This document provides detailed information about each stage of the APKalypse pipeline.
 
 ## Pipeline Overview
 
@@ -674,7 +674,7 @@ class ComplianceReport:
 ### Running the Full Pipeline
 
 ```bash
-behavior2build run app.apk \
+APKalypse run app.apk \
     --name "My App" \
     --package com.example.myapp \
     --output ./generated
@@ -683,13 +683,13 @@ behavior2build run app.apk \
 ### Analysis Only
 
 ```bash
-behavior2build analyze app.apk --output ./analysis
+APKalypse analyze app.apk --output ./analysis
 ```
 
 ### Programmatic Usage
 
 ```python
-from behavior2build.orchestration import run_pipeline
+from APKalypse.orchestration import run_pipeline
 
 result = await run_pipeline(
     apk_path=Path("app.apk"),

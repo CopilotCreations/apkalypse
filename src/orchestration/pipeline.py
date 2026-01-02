@@ -1,5 +1,5 @@
 """
-Main pipeline orchestration for Behavior2Build.
+Main pipeline orchestration for APKalypse.
 
 Implements the complete pipeline flow using Prefect for orchestration.
 """
@@ -78,13 +78,13 @@ class PipelineResult(BaseModel):
 
 
 @flow(
-    name="behavior2build",
+    name="APKalypse",
     description="Complete APK to greenfield app pipeline",
     version="1.0.0",
     retries=0,
 )
-async def behavior2build_flow(config: PipelineConfig) -> PipelineResult:
-    """Execute the complete Behavior2Build pipeline.
+async def APKalypse_flow(config: PipelineConfig) -> PipelineResult:
+    """Execute the complete APKalypse pipeline.
 
     This flow orchestrates all pipeline stages from APK ingestion
     to verified code generation.
@@ -99,7 +99,7 @@ async def behavior2build_flow(config: PipelineConfig) -> PipelineResult:
     logger = get_run_logger()
     started_at = datetime.utcnow()
 
-    logger.info(f"Starting Behavior2Build pipeline. Run ID: {run_id}")
+    logger.info(f"Starting APKalypse pipeline. Run ID: {run_id}")
     logger.info(f"APK: {config.apk_path}")
     logger.info(f"App name: {config.app_name}")
 
@@ -237,7 +237,7 @@ async def behavior2build_flow(config: PipelineConfig) -> PipelineResult:
         )
 
 
-class Behavior2BuildPipeline:
+class APKalypsePipeline:
     """High-level pipeline interface for programmatic use."""
 
     def __init__(self) -> None:
@@ -279,7 +279,7 @@ class Behavior2BuildPipeline:
             skip_dynamic_analysis=skip_dynamic_analysis,
         )
 
-        return await behavior2build_flow(config)
+        return await APKalypse_flow(config)
 
 
 async def run_pipeline(
@@ -299,7 +299,7 @@ async def run_pipeline(
     Returns:
         PipelineResult with all outputs
     """
-    pipeline = Behavior2BuildPipeline()
+    pipeline = APKalypsePipeline()
     return await pipeline.run(
         apk_path=Path(apk_path),
         app_name=app_name,

@@ -1,8 +1,8 @@
-# Behavior2Build
+# APKalypse
 
 **Automated APK Behavioral Analysis and Greenfield Android App Generation**
 
-Behavior2Build is a production-ready, end-to-end system that:
+APKalypse is a production-ready, end-to-end system that:
 - Takes a third-party Android app (APK + public metadata)
 - Extracts observable behavior (NOT source code reuse)
 - Produces formal, implementation-agnostic behavioral specifications
@@ -26,7 +26,7 @@ Behavior2Build is a production-ready, end-to-end system that:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Behavior2Build Pipeline                       │
+│                        APKalypse Pipeline                       │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐      │
@@ -75,16 +75,16 @@ pip install -e ".[dev]"
 
 ```bash
 # Full pipeline
-behavior2build run app.apk \
+APKalypse run app.apk \
     --name "My App" \
     --package com.example.myapp \
     --output ./generated
 
 # Analysis only (no code generation)
-behavior2build analyze app.apk --output ./analysis
+APKalypse analyze app.apk --output ./analysis
 
 # Show configuration
-behavior2build config
+APKalypse config
 ```
 
 ### Python API
@@ -92,7 +92,7 @@ behavior2build config
 ```python
 import asyncio
 from pathlib import Path
-from behavior2build.orchestration import run_pipeline
+from APKalypse.orchestration import run_pipeline
 
 async def main():
     result = await run_pipeline(
@@ -263,7 +263,7 @@ pytest tests/unit/test_models.py
 ### Custom Storage Backend
 
 ```python
-from behavior2build.storage import StorageBackend
+from APKalypse.storage import StorageBackend
 
 class S3StorageBackend(StorageBackend):
     async def store_bytes(self, key: str, data: bytes, metadata=None) -> str:
@@ -274,7 +274,7 @@ class S3StorageBackend(StorageBackend):
 ### Custom Agent Provider
 
 ```python
-from behavior2build.agents import Agent
+from APKalypse.agents import Agent
 
 class CustomAgent(Agent[MyInput, MyOutput]):
     def get_prompt_template(self) -> PromptTemplate:
@@ -285,7 +285,7 @@ class CustomAgent(Agent[MyInput, MyOutput]):
 
 ```python
 from prefect import flow
-from behavior2build.orchestration.tasks import *
+from APKalypse.orchestration.tasks import *
 
 @flow
 async def custom_pipeline(apk_path: Path):

@@ -1,5 +1,5 @@
 """
-Configuration management for Behavior2Build.
+Configuration management for APKalypse.
 
 Provides centralized, type-safe configuration with environment variable overrides
 and sensible defaults for all pipeline components.
@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field, SecretStr
 class EmulatorConfig(BaseModel):
     """Android emulator configuration."""
 
-    avd_name: str = Field(default="behavior2build_avd", description="AVD name to use")
+    avd_name: str = Field(default="APKalypse_avd", description="AVD name to use")
     api_level: int = Field(default=33, ge=26, le=35, description="Android API level")
     system_image: str = Field(
         default="system-images;android-33;google_apis;x86_64",
@@ -54,7 +54,7 @@ class StorageConfig(BaseModel):
         default=Path("./output"), description="Base path for local storage"
     )
     s3_bucket: str | None = Field(default=None, description="S3 bucket for remote storage")
-    s3_prefix: str = Field(default="behavior2build/", description="S3 key prefix")
+    s3_prefix: str = Field(default="APKalypse/", description="S3 key prefix")
     retention_days: int = Field(default=30, ge=1, description="Artifact retention period")
 
 
@@ -100,9 +100,9 @@ class PipelineConfig(BaseModel):
 
 
 class Config(BaseModel):
-    """Root configuration for Behavior2Build."""
+    """Root configuration for APKalypse."""
 
-    project_name: str = Field(default="behavior2build", description="Project identifier")
+    project_name: str = Field(default="APKalypse", description="Project identifier")
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = Field(
         default="INFO", description="Logging level"
     )

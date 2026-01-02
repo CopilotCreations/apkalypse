@@ -1,5 +1,5 @@
 """
-Core type definitions for Behavior2Build.
+Core type definitions for APKalypse.
 
 Provides type aliases and result types used throughout the pipeline
 for type-safe data flow between stages.

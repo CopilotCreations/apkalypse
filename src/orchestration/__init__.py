@@ -1,6 +1,6 @@
-"""Orchestration module for Behavior2Build."""
+"""Orchestration module for APKalypse."""
 
-from .pipeline import Behavior2BuildPipeline, run_pipeline
+from .pipeline import APKalypsePipeline, run_pipeline
 from .tasks import (
     ingest_apk,
     run_static_analysis,
@@ -14,7 +14,7 @@ from .tasks import (
 )
 
 __all__ = [
-    "Behavior2BuildPipeline",
+    "APKalypsePipeline",
     "run_pipeline",
     "ingest_apk",
     "run_static_analysis",

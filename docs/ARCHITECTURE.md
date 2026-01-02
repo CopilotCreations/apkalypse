@@ -1,10 +1,10 @@
-# Behavior2Build Architecture
+# APKalypse Architecture
 
-This document provides a comprehensive overview of the Behavior2Build system architecture.
+This document provides a comprehensive overview of the APKalypse system architecture.
 
 ## System Overview
 
-Behavior2Build is a multi-stage pipeline that transforms Android APK files into greenfield Android applications by:
+APKalypse is a multi-stage pipeline that transforms Android APK files into greenfield Android applications by:
 
 1. **Extracting behavioral specifications** from an existing APK through static and dynamic analysis
 2. **Synthesizing a modern architecture** based on the behavioral model
@@ -12,7 +12,7 @@ Behavior2Build is a multi-stage pipeline that transforms Android APK files into 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           Behavior2Build System                              │
+│                           APKalypse System                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │   ┌───────────────────────────────────────────────────────────────────┐     │
@@ -45,7 +45,7 @@ Behavior2Build is a multi-stage pipeline that transforms Android APK files into 
 The orchestration layer manages the pipeline execution using **Prefect** for workflow management.
 
 **Key Components:**
-- `pipeline.py` - Main flow definition (`behavior2build_flow`)
+- `pipeline.py` - Main flow definition (`APKalypse_flow`)
 - `tasks.py` - Individual task wrappers for each service
 
 **Responsibilities:**
@@ -216,7 +216,7 @@ Built-in logging and tracing:
 ## Module Structure
 
 ```
-behavior2build/
+APKalypse/
 ├── src/
 │   ├── agents/           # AI agent implementations
 │   │   ├── base.py       # Base Agent class
@@ -271,7 +271,7 @@ Configuration is managed through environment variables and the `Config` class:
 ### Custom Storage Backend
 
 ```python
-from behavior2build.storage import StorageBackend
+from APKalypse.storage import StorageBackend
 
 class S3StorageBackend(StorageBackend):
     async def store_bytes(self, key, data, metadata=None):
@@ -282,7 +282,7 @@ class S3StorageBackend(StorageBackend):
 ### Custom Agent
 
 ```python
-from behavior2build.agents import Agent
+from APKalypse.agents import Agent
 
 class CustomAgent(Agent[MyInput, MyOutput]):
     @property
@@ -297,7 +297,7 @@ class CustomAgent(Agent[MyInput, MyOutput]):
 
 ```python
 from prefect import flow
-from behavior2build.orchestration.tasks import *
+from APKalypse.orchestration.tasks import *
 
 @flow
 async def custom_pipeline(apk_path: Path):

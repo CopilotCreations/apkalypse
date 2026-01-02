@@ -1,7 +1,7 @@
 """
-Custom exception hierarchy for Behavior2Build.
+Custom exception hierarchy for APKalypse.
 
-All exceptions inherit from Behavior2BuildError to enable consistent error handling
+All exceptions inherit from APKalypseError to enable consistent error handling
 across the pipeline. Each exception type includes context for debugging and logging.
 """
 
@@ -12,8 +12,8 @@ from typing import Any
 
 
 @dataclass
-class Behavior2BuildError(Exception):
-    """Base exception for all Behavior2Build errors."""
+class APKalypseError(Exception):
+    """Base exception for all APKalypse errors."""
 
     message: str
     context: dict[str, Any] = field(default_factory=dict)
@@ -26,7 +26,7 @@ class Behavior2BuildError(Exception):
 
 
 @dataclass
-class ValidationError(Behavior2BuildError):
+class ValidationError(APKalypseError):
     """Raised when input or output validation fails."""
 
     field_name: str | None = None
@@ -41,7 +41,7 @@ class ValidationError(Behavior2BuildError):
 
 
 @dataclass
-class ServiceError(Behavior2BuildError):
+class ServiceError(APKalypseError):
     """Raised when a service operation fails."""
 
     service_name: str = ""
@@ -55,7 +55,7 @@ class ServiceError(Behavior2BuildError):
 
 
 @dataclass
-class PipelineError(Behavior2BuildError):
+class PipelineError(APKalypseError):
     """Raised when pipeline orchestration fails."""
 
     stage: str = ""
@@ -67,7 +67,7 @@ class PipelineError(Behavior2BuildError):
 
 
 @dataclass
-class ComplianceViolationError(Behavior2BuildError):
+class ComplianceViolationError(APKalypseError):
     """Raised when a compliance rule is violated.
 
     This is a critical error that blocks pipeline execution when strict
@@ -97,7 +97,7 @@ class EmulatorError(ServiceError):
 
 
 @dataclass
-class ToolNotFoundError(Behavior2BuildError):
+class ToolNotFoundError(APKalypseError):
     """Raised when a required external tool is not available."""
 
     tool_name: str = ""

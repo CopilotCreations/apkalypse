@@ -1,4 +1,4 @@
-"""Services package for Behavior2Build."""
+"""Services package for APKalypse."""
 
 from .ingestion import IngestionService
 from .static_analysis import StaticAnalysisService

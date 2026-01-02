@@ -1,7 +1,7 @@
 """
-Behavior2Build CLI.
+APKalypse CLI.
 
-Command-line interface for running the Behavior2Build pipeline.
+Command-line interface for running the APKalypse pipeline.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from .core.config import get_config
 from .core.logging import setup_logging
 
 app = typer.Typer(
-    name="behavior2build",
+    name="APKalypse",
     help="Automated APK behavioral analysis and greenfield app generation",
     add_completion=False,
 )
@@ -33,7 +33,7 @@ def version_callback(value: bool) -> None:
     """Show version and exit."""
     if value:
         from . import __version__
-        console.print(f"Behavior2Build v{__version__}")
+        console.print(f"APKalypse v{__version__}")
         raise typer.Exit()
 
 
@@ -48,7 +48,7 @@ def main(
         help="Show version and exit",
     ),
 ) -> None:
-    """Behavior2Build: APK to greenfield Android app pipeline."""
+    """APKalypse: APK to greenfield Android app pipeline."""
     pass
 
 
@@ -102,7 +102,7 @@ def run(
         help="Enable verbose logging",
     ),
 ) -> None:
-    """Run the complete Behavior2Build pipeline.
+    """Run the complete APKalypse pipeline.
 
     Analyzes an APK file, extracts behavioral specifications,
     and generates a greenfield Android application.
@@ -114,7 +114,7 @@ def run(
     setup_logging(config)
 
     console.print(Panel.fit(
-        "[bold blue]Behavior2Build[/bold blue]\n"
+        "[bold blue]APKalypse[/bold blue]\n"
         "APK → Behavioral Spec → Greenfield Android App",
         border_style="blue",
     ))

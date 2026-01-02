@@ -1,8 +1,8 @@
-"""Core infrastructure components for Behavior2Build."""
+"""Core infrastructure components for APKalypse."""
 
 from .config import Config, get_config
 from .exceptions import (
-    Behavior2BuildError,
+    APKalypseError,
     ComplianceViolationError,
     PipelineError,
     ServiceError,
@@ -14,7 +14,7 @@ from .types import ArtifactPath, Hash, ServiceResult, StageResult
 __all__ = [
     "Config",
     "get_config",
-    "Behavior2BuildError",
+    "APKalypseError",
     "ComplianceViolationError",
     "PipelineError",
     "ServiceError",

@@ -3,14 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "behavior2build"
+name = "APKalypse"
 version = "1.0.0"
 description = "Automated pipeline for deriving behavioral specifications from APKs and generating greenfield Android apps"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
-    {name = "Behavior2Build Team"}
+    {name = "APKalypse Team"}
 ]
 keywords = ["android", "apk", "behavioral-analysis", "code-generation", "automation"]
 classifiers = [
@@ -55,8 +55,8 @@ dev = [
 ]
 
 [project.scripts]
-behavior2build = "behavior2build.cli:main"
-b2b = "behavior2build.cli:main"
+APKalypse = "APKalypse.cli:main"
+b2b = "APKalypse.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

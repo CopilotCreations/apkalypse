@@ -1,6 +1,6 @@
 # Prerequisites
 
-This document outlines the prerequisites required to run the Behavior2Build pipeline.
+This document outlines the prerequisites required to run the APKalypse pipeline.
 
 ## System Requirements
 
@@ -68,7 +68,7 @@ For dynamic analysis, you need an Android emulator configured:
 ```bash
 # Create AVD
 sdkmanager "system-images;android-33;google_apis;x86_64"
-avdmanager create avd -n behavior2build_avd -k "system-images;android-33;google_apis;x86_64"
+avdmanager create avd -n APKalypse_avd -k "system-images;android-33;google_apis;x86_64"
 ```
 
 ## API Keys

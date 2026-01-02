@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://behavior2build.dev/schemas/behavioral-spec.json",
+  "$id": "https://APKalypse.dev/schemas/behavioral-spec.json",
   "title": "Behavioral Specification",
   "description": "Implementation-agnostic product specification",
   "type": "object",

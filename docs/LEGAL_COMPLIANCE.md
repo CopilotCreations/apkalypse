@@ -1,10 +1,10 @@
 # Legal Compliance
 
-This document describes the legal safety mechanisms built into Behavior2Build to ensure generated applications do not infringe on intellectual property rights.
+This document describes the legal safety mechanisms built into APKalypse to ensure generated applications do not infringe on intellectual property rights.
 
 ## Overview
 
-Behavior2Build is designed from the ground up to be legally safe for creating applications that replicate **behavior** without copying **code**.
+APKalypse is designed from the ground up to be legally safe for creating applications that replicate **behavior** without copying **code**.
 
 ### Core Principle
 
@@ -314,7 +314,7 @@ compliance/{run_id}/compliance_report.json
 ### Retrieving Reports
 
 ```python
-from behavior2build.services.compliance import ComplianceGuard
+from APKalypse.services.compliance import ComplianceGuard
 
 guard = ComplianceGuard(storage)
 report = await guard.audit_run(run_id)
@@ -422,7 +422,7 @@ Periodically review:
 
 ## Summary
 
-Behavior2Build implements comprehensive legal safeguards:
+APKalypse implements comprehensive legal safeguards:
 
 | Layer | Protection |
 |-------|------------|

@@ -1,5 +1,5 @@
 """
-Agent framework for Behavior2Build.
+Agent framework for APKalypse.
 
 Provides a reusable abstraction for LLM-based agents with type-safe
 inputs/outputs, automatic retries, and output validation.
