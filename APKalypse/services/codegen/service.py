@@ -1262,37 +1262,26 @@ exec "$JAVACMD" "$@"
 '''
 
     async def _download_gradle_wrapper_jar(self, gradle_version: str) -> bytes:
-        """Download the gradle-wrapper.jar from the official Gradle distribution.
+        """Download the gradle-wrapper.jar from the official Gradle GitHub repository.
         
-        The gradle-wrapper.jar is bundled inside the Gradle distribution zip in the
-        lib/plugins/ directory as gradle-wrapper-{version}.jar. We download the 
-        distribution and extract it.
+        The gradle-wrapper.jar is a standalone bootstrap JAR maintained in the Gradle
+        GitHub repository. This JAR is version-independent - the actual Gradle version
+        is determined by gradle-wrapper.properties.
         """
-        import zipfile
-        import io
-        
-        # Download the full Gradle distribution and extract the wrapper jar
-        dist_url = f"https://services.gradle.org/distributions/gradle-{gradle_version}-bin.zip"
+        # Download from Gradle's GitHub repository - the wrapper jar is version-independent
+        # We use the raw GitHub URL for the gradle-wrapper.jar
+        github_url = "https://github.com/gradle/gradle/raw/master/gradle/wrapper/gradle-wrapper.jar"
         
         try:
-            async with httpx.AsyncClient(timeout=300.0) as client:
-                response = await client.get(dist_url, follow_redirects=True)
+            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+                response = await client.get(github_url)
                 if response.status_code == 200:
-                    # Extract gradle-wrapper.jar from the distribution zip
-                    with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-                        # The wrapper jar is in lib/plugins/gradle-wrapper-{version}.jar
-                        wrapper_path = f"gradle-{gradle_version}/lib/plugins/gradle-wrapper-{gradle_version}.jar"
-                        try:
-                            return zf.read(wrapper_path)
-                        except KeyError:
-                            # Try alternative paths - in some versions it may be elsewhere
-                            for name in zf.namelist():
-                                if "gradle-wrapper" in name and name.endswith(".jar"):
-                                    logger.info(f"Found gradle-wrapper.jar at: {name}")
-                                    return zf.read(name)
-                            logger.warning(f"gradle-wrapper.jar not found in distribution zip")
+                    logger.info(f"Downloaded gradle-wrapper.jar from GitHub ({len(response.content)} bytes)")
+                    return response.content
+                else:
+                    logger.warning(f"Failed to download gradle-wrapper.jar from GitHub: HTTP {response.status_code}")
         except Exception as e:
-            logger.warning(f"Failed to download Gradle distribution: {e}")
+            logger.warning(f"Failed to download gradle-wrapper.jar from GitHub: {e}")
         
         # Fallback: return empty - the project will need 'gradle wrapper' to be run
         logger.warning("Could not download gradle-wrapper.jar, project will need 'gradle wrapper' to be run")

@@ -211,6 +211,16 @@ class Agent(ABC, Generic[InputT, OutputT]):
             if self.config.provider == "azure_openai" and self.config.azure_deployment_name:
                 model_name = self.config.azure_deployment_name
             
+            logger.info(
+                "LLM request starting",
+                provider=self.config.provider,
+                model=model_name,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                system_prompt_chars=len(system_prompt),
+                user_prompt_chars=len(user_prompt),
+            )
+            
             response = await client.chat.completions.create(
                 model=model_name,
                 messages=[
@@ -221,30 +231,61 @@ class Agent(ABC, Generic[InputT, OutputT]):
                 max_completion_tokens=max_tokens,
                 response_format={"type": "json_object"},
             )
-            return (
-                response.choices[0].message.content or "",
-                {
-                    "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
-                    "completion_tokens": response.usage.completion_tokens if response.usage else 0,
-                    "total_tokens": response.usage.total_tokens if response.usage else 0,
-                },
+            
+            response_text = response.choices[0].message.content or ""
+            token_counts = {
+                "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+                "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+                "total_tokens": response.usage.total_tokens if response.usage else 0,
+            }
+            
+            logger.info(
+                "LLM response received",
+                provider=self.config.provider,
+                model=model_name,
+                prompt_tokens=token_counts["prompt_tokens"],
+                completion_tokens=token_counts["completion_tokens"],
+                response_chars=len(response_text),
+                finish_reason=response.choices[0].finish_reason if response.choices else None,
             )
+            
+            return (response_text, token_counts)
 
         elif self.config.provider == "anthropic":
+            logger.info(
+                "LLM request starting",
+                provider=self.config.provider,
+                model=self.config.model,
+                max_tokens=max_tokens,
+                system_prompt_chars=len(system_prompt),
+                user_prompt_chars=len(user_prompt),
+            )
+            
             response = await client.messages.create(
                 model=self.config.model,
                 max_tokens=max_tokens,
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_prompt}],
             )
-            return (
-                response.content[0].text if response.content else "",
-                {
-                    "prompt_tokens": response.usage.input_tokens,
-                    "completion_tokens": response.usage.output_tokens,
-                    "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
-                },
+            
+            response_text = response.content[0].text if response.content else ""
+            token_counts = {
+                "prompt_tokens": response.usage.input_tokens,
+                "completion_tokens": response.usage.output_tokens,
+                "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
+            }
+            
+            logger.info(
+                "LLM response received",
+                provider=self.config.provider,
+                model=self.config.model,
+                prompt_tokens=token_counts["prompt_tokens"],
+                completion_tokens=token_counts["completion_tokens"],
+                response_chars=len(response_text),
+                stop_reason=response.stop_reason,
             )
+            
+            return (response_text, token_counts)
 
         raise AgentError(
             message=f"Unknown provider: {self.config.provider}",
