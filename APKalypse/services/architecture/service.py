@@ -55,12 +55,23 @@ class ArchitectureService:
     """
 
     def __init__(self, storage: StorageBackend) -> None:
-        """Initialize the architecture service."""
+        """Initialize the architecture service.
+
+        Args:
+            storage: Storage backend for persisting architecture specs.
+        """
         self.storage = storage
         self.architect_agent = SystemArchitectAgent()
 
     def _create_default_modules(self, behavioral_spec: BehavioralSpec) -> list[ModuleDefinition]:
-        """Create default module structure."""
+        """Create default module structure.
+
+        Args:
+            behavioral_spec: The behavioral specification to base modules on.
+
+        Returns:
+            A list of module definitions including app, core, and feature modules.
+        """
         modules = []
 
         # App module
@@ -135,7 +146,14 @@ class ArchitectureService:
         return modules
 
     def _group_screens_to_features(self, screen_specs: list[Any]) -> dict[str, list[Any]]:
-        """Group screens into feature modules."""
+        """Group screens into feature modules.
+
+        Args:
+            screen_specs: List of screen specifications to group.
+
+        Returns:
+            A dictionary mapping feature names to lists of screen specs.
+        """
         groups: dict[str, list[Any]] = {}
 
         for screen in screen_specs:
@@ -164,7 +182,12 @@ class ArchitectureService:
         return groups
 
     def _create_default_adrs(self) -> list[ArchitectureDecisionRecord]:
-        """Create default Architecture Decision Records."""
+        """Create default Architecture Decision Records.
+
+        Returns:
+            A list of ADRs covering MVVM, Compose, Hilt, multi-module,
+            and coroutines decisions.
+        """
         adrs = []
 
         adrs.append(ArchitectureDecisionRecord(
@@ -235,7 +258,12 @@ class ArchitectureService:
         return adrs
 
     def _create_default_technology_decisions(self) -> list[TechnologyDecision]:
-        """Create default technology decisions."""
+        """Create default technology decisions.
+
+        Returns:
+            A list of technology decisions covering language, UI, DI,
+            networking, storage, navigation, and testing.
+        """
         decisions = []
 
         # Language
@@ -379,7 +407,14 @@ class ArchitectureService:
         return decisions
 
     def _create_data_flow_diagram(self, behavioral_spec: BehavioralSpec) -> DataFlowDiagram:
-        """Create a data flow diagram."""
+        """Create a data flow diagram.
+
+        Args:
+            behavioral_spec: The behavioral specification to base the diagram on.
+
+        Returns:
+            A data flow diagram showing the main data flow through application layers.
+        """
         nodes = [
             DataFlowNode(node_id="user", node_type="source", name="User", description="Application user"),
             DataFlowNode(node_id="ui", node_type="process", name="UI Layer", description="Compose screens"),
@@ -411,13 +446,17 @@ class ArchitectureService:
         )
 
     async def synthesize(self, input_data: ArchitectureInput) -> ServiceResult[ArchitectureOutput]:
-        """Synthesize technical architecture.
+        """Synthesize technical architecture from behavioral specifications.
+
+        Uses AI agents to design a clean, modern Android architecture based on
+        the provided behavioral specifications.
 
         Args:
-            input_data: Architecture input
+            input_data: Architecture input containing behavioral spec and run ID.
 
         Returns:
-            ServiceResult containing ArchitectureOutput
+            ServiceResult containing ArchitectureOutput with the synthesized
+            architecture spec and storage key, or an error on failure.
         """
         import time
 

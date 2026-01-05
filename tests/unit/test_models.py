@@ -34,7 +34,11 @@ class TestAPKModels:
     """Tests for APK-related models."""
 
     def test_permission_info_short_name(self):
-        """Test permission short name extraction."""
+        """Test permission short name extraction.
+
+        Verifies that PermissionInfo correctly extracts the short name
+        from a fully qualified Android permission string.
+        """
         perm = PermissionInfo(
             name="android.permission.CAMERA",
             category=PermissionCategory.DANGEROUS,
@@ -42,7 +46,11 @@ class TestAPKModels:
         assert perm.short_name == "CAMERA"
 
     def test_activity_info_simple_name(self):
-        """Test activity simple name extraction."""
+        """Test activity simple name extraction.
+
+        Verifies that ActivityInfo correctly extracts the simple class name
+        from a fully qualified activity class name.
+        """
         activity = ActivityInfo(
             name="com.example.app.MainActivity",
             exported=True,
@@ -50,7 +58,11 @@ class TestAPKModels:
         assert activity.simple_name == "MainActivity"
 
     def test_manifest_launcher_activity(self):
-        """Test launcher activity detection."""
+        """Test launcher activity detection.
+
+        Verifies that ManifestData correctly identifies the launcher activity
+        from a list of activities.
+        """
         manifest = ManifestData(
             package_name="com.example.app",
             activities=[
@@ -64,7 +76,11 @@ class TestAPKModels:
         assert launcher.name == "com.example.app.MainActivity"
 
     def test_manifest_dangerous_permissions(self):
-        """Test dangerous permissions filtering."""
+        """Test dangerous permissions filtering.
+
+        Verifies that ManifestData correctly filters and returns only
+        dangerous permissions from the full permission list.
+        """
         manifest = ManifestData(
             package_name="com.example.app",
             permissions=[
@@ -78,7 +94,11 @@ class TestAPKModels:
         assert all(p.category == PermissionCategory.DANGEROUS for p in dangerous)
 
     def test_apk_metadata_serialization(self):
-        """Test APK metadata JSON serialization."""
+        """Test APK metadata JSON serialization.
+
+        Verifies that APKMetadata can be serialized to JSON and contains
+        the expected package name and hash values.
+        """
         metadata = APKMetadata(
             provenance=APKProvenance(
                 sha256_hash="abc123" * 10,
@@ -98,7 +118,11 @@ class TestBehaviorModels:
     """Tests for behavior models."""
 
     def test_screen_model_creation(self):
-        """Test screen model creation."""
+        """Test screen model creation.
+
+        Verifies that ScreenModel can be created with required fields
+        and has correct default values.
+        """
         screen = ScreenModel(
             screen_id="screen_1",
             screen_name="Home Screen",
@@ -109,7 +133,11 @@ class TestBehaviorModels:
         assert screen.discovery_method == "dynamic"
 
     def test_user_action_creation(self):
-        """Test user action creation."""
+        """Test user action creation.
+
+        Verifies that UserAction can be created with the required fields
+        and correctly stores action type and source screen.
+        """
         action = UserAction(
             action_id="action_1",
             action_type=ActionType.TAP,
@@ -120,7 +148,11 @@ class TestBehaviorModels:
         assert action.source_screen_id == "screen_1"
 
     def test_state_transition_creation(self):
-        """Test state transition creation."""
+        """Test state transition creation.
+
+        Verifies that StateTransition can be created with source and
+        destination screens linked by a triggering action.
+        """
         action = UserAction(
             action_id="action_1",
             action_type=ActionType.TAP,
@@ -137,7 +169,11 @@ class TestBehaviorModels:
         assert transition.to_screen_id == "screen_2"
 
     def test_behavior_model_statistics(self):
-        """Test behavior model statistics update."""
+        """Test behavior model statistics update.
+
+        Verifies that BehaviorModel correctly updates and calculates
+        statistics for screens, intents, and transitions.
+        """
         model = BehaviorModel(
             model_id="model_1",
             app_package="com.example.app",
@@ -160,7 +196,11 @@ class TestBehaviorModels:
         assert model.total_transitions == 0
 
     def test_behavior_model_screen_lookup(self):
-        """Test screen lookup by ID."""
+        """Test screen lookup by ID.
+
+        Verifies that BehaviorModel can retrieve screens by their ID
+        and returns None for non-existent screen IDs.
+        """
         model = BehaviorModel(
             model_id="model_1",
             app_package="com.example.app",
@@ -177,7 +217,11 @@ class TestBehaviorModels:
         assert model.get_screen("nonexistent") is None
 
     def test_behavior_model_transition_queries(self):
-        """Test transition query methods."""
+        """Test transition query methods.
+
+        Verifies that BehaviorModel can query transitions by source
+        and destination screen IDs.
+        """
         action = UserAction(
             action_id="a1",
             action_type=ActionType.TAP,
@@ -211,7 +255,11 @@ class TestSpecModels:
     """Tests for specification models."""
 
     def test_functional_requirement_creation(self):
-        """Test functional requirement creation."""
+        """Test functional requirement creation.
+
+        Verifies that FunctionalRequirement can be created with required
+        fields including priority and acceptance criteria.
+        """
         req = FunctionalRequirement(
             req_id="FR-001",
             title="User Login",
@@ -227,7 +275,11 @@ class TestSpecModels:
         assert len(req.acceptance_criteria) == 2
 
     def test_nonfunctional_requirement_creation(self):
-        """Test non-functional requirement creation."""
+        """Test non-functional requirement creation.
+
+        Verifies that NonFunctionalRequirement can be created with
+        category, metric, and target value fields.
+        """
         req = NonFunctionalRequirement(
             req_id="NFR-001",
             title="App Launch Time",
@@ -241,7 +293,11 @@ class TestSpecModels:
         assert req.metric == "Cold start time"
 
     def test_behavioral_spec_creation(self):
-        """Test behavioral spec creation."""
+        """Test behavioral spec creation.
+
+        Verifies that BehavioralSpec can be created with functional
+        requirements and screen specifications.
+        """
         spec = BehavioralSpec(
             spec_id="spec_1",
             app_name="My App",

@@ -59,21 +59,47 @@ class QAParityAgent(Agent[ParityInput, ParityOutput]):
 
     @property
     def name(self) -> str:
+        """Get the agent's unique identifier.
+
+        Returns:
+            str: The agent name 'qa_parity'.
+        """
         return self.NAME
 
     @property
     def description(self) -> str:
+        """Get the agent's description.
+
+        Returns:
+            str: A brief description of the agent's purpose.
+        """
         return "Verifies behavioral parity between applications"
 
     @property
     def input_type(self) -> type[ParityInput]:
+        """Get the expected input type for this agent.
+
+        Returns:
+            type[ParityInput]: The ParityInput model class.
+        """
         return ParityInput
 
     @property
     def output_type(self) -> type[ParityOutput]:
+        """Get the expected output type for this agent.
+
+        Returns:
+            type[ParityOutput]: The ParityOutput model class.
+        """
         return ParityOutput
 
     def get_prompt_template(self) -> PromptTemplate:
+        """Get the prompt template for parity verification.
+
+        Returns:
+            PromptTemplate: A template containing system and user prompts
+                for comparing application behaviors.
+        """
         return PromptTemplate(
             template_id="qa_parity_v1",
             version="1.0.0",
@@ -141,6 +167,19 @@ Analyze the parity and generate a report as JSON:
         )
 
     def prepare_input(self, input_data: ParityInput) -> dict[str, Any]:
+        """Prepare input data for the prompt template.
+
+        Serializes behaviors and screen states to JSON format for
+        inclusion in the prompt.
+
+        Args:
+            input_data: The parity input containing test scenario,
+                original and generated behaviors, and screen states.
+
+        Returns:
+            dict[str, Any]: A dictionary with serialized values ready
+                for template substitution.
+        """
         import json
         return {
             "test_scenario": input_data.test_scenario,
@@ -151,6 +190,17 @@ Analyze the parity and generate a report as JSON:
         }
 
     def validate_output(self, output: ParityOutput) -> list[str]:
+        """Validate the parity output for consistency issues.
+
+        Checks for logical inconsistencies such as passing with critical
+        issues or very low parity scores.
+
+        Args:
+            output: The parity verification output to validate.
+
+        Returns:
+            list[str]: A list of warning messages for any detected issues.
+        """
         warnings = []
         critical_issues = [i for i in output.issues if i.severity == "critical"]
         if critical_issues and output.passed:

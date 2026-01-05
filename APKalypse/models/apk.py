@@ -34,7 +34,11 @@ class PermissionInfo(BaseModel):
 
     @property
     def short_name(self) -> str:
-        """Get short permission name without android.permission prefix."""
+        """Get short permission name without android.permission prefix.
+
+        Returns:
+            str: The permission name with the 'android.permission.' prefix removed.
+        """
         return self.name.replace("android.permission.", "")
 
 
@@ -51,7 +55,12 @@ class ActivityInfo(BaseModel):
 
     @property
     def simple_name(self) -> str:
-        """Get simple class name without package."""
+        """Get simple class name without package.
+
+        Returns:
+            str: The class name without the package prefix
+                (e.g., 'MainActivity' from 'com.example.MainActivity').
+        """
         return self.name.split(".")[-1]
 
 
@@ -116,7 +125,12 @@ class ManifestData(BaseModel):
 
     @property
     def launcher_activity(self) -> ActivityInfo | None:
-        """Get the main launcher activity."""
+        """Get the main launcher activity.
+
+        Returns:
+            ActivityInfo | None: The activity marked as the launcher,
+                or None if no launcher activity is defined.
+        """
         for activity in self.activities:
             if activity.is_launcher:
                 return activity
@@ -124,7 +138,12 @@ class ManifestData(BaseModel):
 
     @property
     def dangerous_permissions(self) -> list[PermissionInfo]:
-        """Get list of dangerous permissions."""
+        """Get list of dangerous permissions.
+
+        Returns:
+            list[PermissionInfo]: All permissions with the DANGEROUS category,
+                which require explicit user consent at runtime.
+        """
         return [p for p in self.permissions if p.category == PermissionCategory.DANGEROUS]
 
 

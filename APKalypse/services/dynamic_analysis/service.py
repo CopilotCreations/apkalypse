@@ -85,7 +85,15 @@ class EmulatorSession:
     is_ready: bool = False
 
     async def start(self) -> None:
-        """Start the emulator."""
+        """Start the emulator.
+
+        Locates the emulator and adb binaries, starts the emulator process,
+        and waits for it to fully boot.
+
+        Raises:
+            EmulatorError: If emulator or adb binaries are not found, or if
+                the emulator fails to start.
+        """
         sdk_root = get_config().tools.android_sdk_root
         
         # Find emulator binary
@@ -148,7 +156,14 @@ class EmulatorSession:
         self.is_ready = True
 
     async def _wait_for_boot(self) -> None:
-        """Wait for emulator to boot."""
+        """Wait for the emulator to complete booting.
+
+        Polls the emulator's boot completion status until it reports ready
+        or the configured timeout is exceeded.
+
+        Raises:
+            EmulatorError: If the emulator does not boot within the timeout period.
+        """
         timeout = self.config.boot_timeout_seconds
         start = asyncio.get_event_loop().time()
         
@@ -175,7 +190,17 @@ class EmulatorSession:
         )
 
     async def _adb(self, *args: str) -> str:
-        """Run adb command."""
+        """Run an adb command against the emulator.
+
+        Args:
+            *args: Command arguments to pass to adb.
+
+        Returns:
+            The stdout output from the adb command.
+
+        Raises:
+            EmulatorError: If adb is not initialized or the command fails.
+        """
         if not self.adb_path:
             raise EmulatorError(message="adb not initialized", avd_name=self.config.avd_name)
 
@@ -207,12 +232,25 @@ class EmulatorSession:
         return stdout_str
 
     async def install_apk(self, apk_path: Path) -> None:
-        """Install APK on emulator."""
+        """Install an APK on the emulator.
+
+        Args:
+            apk_path: Path to the APK file to install.
+
+        Raises:
+            EmulatorError: If the installation fails.
+        """
         await self._adb("install", "-r", str(apk_path))
         logger.info("APK installed", path=str(apk_path))
 
     async def launch_app(self, package_name: str, activity: str | None = None) -> None:
-        """Launch the app."""
+        """Launch an application on the emulator.
+
+        Args:
+            package_name: The package name of the app to launch.
+            activity: Optional specific activity to start. If not provided,
+                the launcher activity is started using monkey.
+        """
         if activity:
             await self._adb("shell", "am", "start", "-n", f"{package_name}/{activity}")
         else:
@@ -220,36 +258,65 @@ class EmulatorSession:
         await asyncio.sleep(2)
 
     async def get_ui_hierarchy(self) -> str:
-        """Dump UI hierarchy."""
+        """Dump the current UI hierarchy from the emulator.
+
+        Returns:
+            XML string containing the UI hierarchy.
+        """
         await self._adb("shell", "uiautomator", "dump", "/sdcard/ui_dump.xml")
         result = await self._adb("shell", "cat", "/sdcard/ui_dump.xml")
         return result
 
     async def take_screenshot(self) -> bytes:
-        """Take a screenshot."""
+        """Capture a screenshot from the emulator.
+
+        Returns:
+            PNG image data as bytes.
+        """
         await self._adb("shell", "screencap", "-p", "/sdcard/screen.png")
         result = await self._adb("exec-out", "cat", "/sdcard/screen.png")
         return result.encode("latin-1")
 
     async def tap(self, x: int, y: int) -> None:
-        """Tap at coordinates."""
+        """Perform a tap gesture at the specified coordinates.
+
+        Args:
+            x: X coordinate in pixels.
+            y: Y coordinate in pixels.
+        """
         await self._adb("shell", "input", "tap", str(x), str(y))
 
     async def swipe(self, x1: int, y1: int, x2: int, y2: int, duration: int = 300) -> None:
-        """Swipe gesture."""
+        """Perform a swipe gesture between two points.
+
+        Args:
+            x1: Starting X coordinate in pixels.
+            y1: Starting Y coordinate in pixels.
+            x2: Ending X coordinate in pixels.
+            y2: Ending Y coordinate in pixels.
+            duration: Duration of the swipe in milliseconds.
+        """
         await self._adb("shell", "input", "swipe", str(x1), str(y1), str(x2), str(y2), str(duration))
 
     async def input_text(self, text: str) -> None:
-        """Input text."""
+        """Input text into the currently focused field.
+
+        Args:
+            text: Text to input. Spaces and quotes are escaped automatically.
+        """
         escaped = text.replace(" ", "%s").replace("'", "\\'")
         await self._adb("shell", "input", "text", escaped)
 
     async def press_back(self) -> None:
-        """Press back button."""
+        """Press the Android back button."""
         await self._adb("shell", "input", "keyevent", "KEYCODE_BACK")
 
     async def get_current_activity(self) -> str:
-        """Get current foreground activity."""
+        """Get the current foreground activity name.
+
+        Returns:
+            Activity name in package/activity format, or empty string if not found.
+        """
         result = await self._adb("shell", "dumpsys", "activity", "activities")
         match = re.search(r"mResumedActivity.*?(\S+/\S+)", result)
         if match:
@@ -257,7 +324,11 @@ class EmulatorSession:
         return ""
 
     async def stop(self) -> None:
-        """Stop the emulator."""
+        """Stop the emulator process.
+
+        Terminates the emulator process gracefully, falling back to kill
+        if termination does not complete within 1 second.
+        """
         if self.process:
             self.process.terminate()
             await asyncio.sleep(1)
@@ -271,6 +342,12 @@ class UIExplorer:
     """Explores app UI automatically."""
 
     def __init__(self, session: EmulatorSession, storage: StorageBackend) -> None:
+        """Initialize the UI explorer.
+
+        Args:
+            session: Active emulator session to use for exploration.
+            storage: Storage backend for saving screenshots and artifacts.
+        """
         self.session = session
         self.storage = storage
         self.visited_states: set[str] = set()
@@ -280,7 +357,16 @@ class UIExplorer:
         self.action_count = 0
 
     def _parse_ui_hierarchy(self, xml_content: str) -> tuple[list[UIElement], str]:
-        """Parse UI hierarchy XML into elements."""
+        """Parse UI hierarchy XML into structured elements.
+
+        Args:
+            xml_content: XML string from uiautomator dump.
+
+        Returns:
+            A tuple containing:
+                - List of root UIElement objects parsed from the hierarchy.
+                - State hash string for identifying unique UI states.
+        """
         import xml.etree.ElementTree as ET
 
         elements = []
@@ -361,7 +447,17 @@ class UIExplorer:
         return elements, str(state_hash)
 
     def _get_clickable_elements(self, elements: list[UIElement]) -> list[UIElement]:
-        """Get all clickable elements recursively."""
+        """Get all clickable elements from the UI hierarchy.
+
+        Recursively traverses the element tree to find all elements that
+        are clickable, visible, and enabled.
+
+        Args:
+            elements: List of root UIElement objects to search.
+
+        Returns:
+            List of clickable UIElement objects.
+        """
         clickable = []
 
         def collect(elem: UIElement) -> None:
@@ -376,7 +472,16 @@ class UIExplorer:
         return clickable
 
     async def explore(self, package_name: str, max_actions: int = 50) -> None:
-        """Explore the app UI."""
+        """Explore the app UI through automated interaction.
+
+        Performs random exploration by clicking on UI elements, recording
+        screen states and transitions. Attempts recovery via back button
+        when exploration steps fail.
+
+        Args:
+            package_name: Package name of the app being explored.
+            max_actions: Maximum number of actions to perform during exploration.
+        """
         logger.info("Starting UI exploration", package=package_name, max_actions=max_actions)
 
         current_screen_id: str | None = None
@@ -471,7 +576,11 @@ class DynamicAnalysisService:
     """
 
     def __init__(self, storage: StorageBackend) -> None:
-        """Initialize the dynamic analysis service."""
+        """Initialize the dynamic analysis service.
+
+        Args:
+            storage: Storage backend for loading APKs and saving artifacts.
+        """
         self.storage = storage
         self.config = get_config()
         self._emulator: EmulatorSession | None = None
@@ -479,11 +588,17 @@ class DynamicAnalysisService:
     async def analyze(self, input_data: DynamicAnalysisInput) -> ServiceResult[DynamicAnalysisOutput]:
         """Perform dynamic analysis on an APK.
 
+        Starts an emulator, installs the APK, launches the app, and explores
+        the UI to record screens, transitions, and network activity. Falls
+        back to mock analysis if the emulator is unavailable.
+
         Args:
-            input_data: Dynamic analysis input
+            input_data: Configuration for the dynamic analysis including APK
+                path, metadata, exploration time, and capture options.
 
         Returns:
-            ServiceResult containing DynamicAnalysisOutput
+            ServiceResult containing DynamicAnalysisOutput with discovered
+            screens, transitions, network calls, and coverage metrics.
         """
         import time
 
@@ -559,7 +674,18 @@ class DynamicAnalysisService:
                 await self._emulator.stop()
 
     async def _mock_analysis(self, input_data: DynamicAnalysisInput) -> ServiceResult[DynamicAnalysisOutput]:
-        """Provide mock analysis when emulator is not available."""
+        """Provide mock analysis when emulator is not available.
+
+        Creates synthetic screen and transition data based on static analysis
+        of the APK manifest activities.
+
+        Args:
+            input_data: Dynamic analysis input containing APK metadata.
+
+        Returns:
+            ServiceResult with mock DynamicAnalysisOutput and a warning
+            indicating that mock data was used.
+        """
         logger.info("Using mock dynamic analysis")
 
         # Create screens from static analysis activities

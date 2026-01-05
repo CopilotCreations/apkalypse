@@ -75,18 +75,37 @@ class PromptTemplate:
     examples: list[dict[str, str]] = field(default_factory=list)
 
     def render_system(self) -> str:
-        """Render the system prompt."""
+        """Render the system prompt.
+
+        Returns:
+            str: The system prompt string.
+        """
         return self.system_prompt
 
     def render_user(self, **kwargs: Any) -> str:
-        """Render the user prompt with variables."""
+        """Render the user prompt with variables.
+
+        Args:
+            **kwargs: Template variables to substitute in the user prompt.
+
+        Returns:
+            str: The rendered user prompt with output format instructions appended
+                if available.
+        """
         prompt = self.user_prompt_template.format(**kwargs)
         if self.output_format_instructions:
             prompt += f"\n\n{self.output_format_instructions}"
         return prompt
 
     def get_hash(self) -> str:
-        """Get deterministic hash of the prompt template."""
+        """Get deterministic hash of the prompt template.
+
+        Generates a SHA-256 hash from the template ID, version, system prompt,
+        and user prompt template for cache invalidation and versioning.
+
+        Returns:
+            str: A 16-character hexadecimal hash string.
+        """
         content = f"{self.template_id}:{self.version}:{self.system_prompt}:{self.user_prompt_template}"
         return hashlib.sha256(content.encode()).hexdigest()[:16]
 
@@ -113,30 +132,51 @@ class Agent(ABC, Generic[InputT, OutputT]):
     @property
     @abstractmethod
     def name(self) -> str:
-        """Unique agent name."""
+        """Unique agent name.
+
+        Returns:
+            str: The unique identifier for this agent.
+        """
         ...
 
     @property
     @abstractmethod
     def description(self) -> str:
-        """Agent description."""
+        """Agent description.
+
+        Returns:
+            str: A human-readable description of what the agent does.
+        """
         ...
 
     @property
     @abstractmethod
     def input_type(self) -> type[InputT]:
-        """Pydantic model type for input."""
+        """Pydantic model type for input.
+
+        Returns:
+            type[InputT]: The Pydantic model class used to validate input data.
+        """
         ...
 
     @property
     @abstractmethod
     def output_type(self) -> type[OutputT]:
-        """Pydantic model type for output."""
+        """Pydantic model type for output.
+
+        Returns:
+            type[OutputT]: The Pydantic model class used to validate output data.
+        """
         ...
 
     @abstractmethod
     def get_prompt_template(self) -> PromptTemplate:
-        """Get the prompt template for this agent."""
+        """Get the prompt template for this agent.
+
+        Returns:
+            PromptTemplate: The versioned prompt template containing system
+                and user prompts for this agent.
+        """
         ...
 
     @abstractmethod
@@ -147,10 +187,10 @@ class Agent(ABC, Generic[InputT, OutputT]):
         that can be used to render the prompt template.
 
         Args:
-            input_data: The validated input data
+            input_data: The validated input data.
 
         Returns:
-            Dictionary of template variables
+            dict[str, Any]: Dictionary of template variables for prompt rendering.
         """
         ...
 
@@ -160,15 +200,25 @@ class Agent(ABC, Generic[InputT, OutputT]):
         Override this method to add custom validation logic.
 
         Args:
-            output: The parsed output
+            output: The parsed output model instance.
 
         Returns:
-            List of warning messages (empty if valid)
+            list[str]: List of warning messages (empty if valid).
         """
         return []
 
     def _get_client(self) -> Any:
-        """Get or create the LLM client."""
+        """Get or create the LLM client.
+
+        Lazily initializes and caches the appropriate LLM client based on
+        the configured provider (openai, anthropic, or azure_openai).
+
+        Returns:
+            Any: The async LLM client instance.
+
+        Raises:
+            AgentError: If the configured provider is unknown.
+        """
         if self._client is not None:
             return self._client
 
@@ -199,7 +249,25 @@ class Agent(ABC, Generic[InputT, OutputT]):
         user_prompt: str,
         context: AgentContext,
     ) -> tuple[str, dict[str, int]]:
-        """Call the LLM and return the response text and token counts."""
+        """Call the LLM and return the response text and token counts.
+
+        Sends a chat completion request to the configured LLM provider with
+        the given prompts and context-based configuration overrides.
+
+        Args:
+            system_prompt: The system prompt to set the LLM's behavior.
+            user_prompt: The user prompt containing the actual request.
+            context: Agent context with configuration overrides and metadata.
+
+        Returns:
+            tuple[str, dict[str, int]]: A tuple containing:
+                - The response text from the LLM.
+                - A dictionary with token counts (prompt_tokens, completion_tokens,
+                  total_tokens).
+
+        Raises:
+            AgentError: If the configured provider is unknown.
+        """
         client = self._get_client()
         
         temperature = context.temperature_override or self.config.temperature
@@ -294,7 +362,20 @@ class Agent(ABC, Generic[InputT, OutputT]):
         )
 
     def _parse_output(self, response_text: str) -> OutputT:
-        """Parse LLM response into output type."""
+        """Parse LLM response into output type.
+
+        Attempts to parse the response as JSON and validate it against
+        the agent's output type using Pydantic.
+
+        Args:
+            response_text: The raw text response from the LLM.
+
+        Returns:
+            OutputT: The validated output model instance.
+
+        Raises:
+            AgentError: If JSON parsing fails or output validation fails.
+        """
         try:
             # Try to parse as JSON
             data = json.loads(response_text)
@@ -325,7 +406,24 @@ class Agent(ABC, Generic[InputT, OutputT]):
         user_prompt: str,
         context: AgentContext,
     ) -> tuple[OutputT, dict[str, int]]:
-        """Invoke LLM with retry logic."""
+        """Invoke LLM with retry logic.
+
+        Calls the LLM and parses the output with automatic retries using
+        exponential backoff (up to 3 attempts, 2-30 second delays).
+
+        Args:
+            system_prompt: The system prompt to set the LLM's behavior.
+            user_prompt: The user prompt containing the actual request.
+            context: Agent context with configuration overrides and metadata.
+
+        Returns:
+            tuple[OutputT, dict[str, int]]: A tuple containing:
+                - The validated output model instance.
+                - A dictionary with token counts.
+
+        Raises:
+            AgentError: If all retry attempts fail.
+        """
         response_text, token_counts = await self._call_llm(
             system_prompt, user_prompt, context
         )
@@ -339,12 +437,16 @@ class Agent(ABC, Generic[InputT, OutputT]):
     ) -> AgentResponse[OutputT]:
         """Invoke the agent with the given input.
 
+        Orchestrates the full agent invocation flow: prepares prompts,
+        calls the LLM with retries, validates output, and logs metrics.
+
         Args:
-            input_data: Validated input data
-            context: Invocation context
+            input_data: Validated input data matching the agent's input type.
+            context: Invocation context with run metadata and config overrides.
 
         Returns:
-            Agent response with output or error
+            AgentResponse[OutputT]: Response containing either the validated output
+                or an error message, along with metrics and provenance data.
         """
         import time
 

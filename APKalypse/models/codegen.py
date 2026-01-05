@@ -38,14 +38,24 @@ class GradleDependency(BaseModel):
     
     @property
     def notation(self) -> str:
-        """Get Gradle dependency notation."""
+        """Get Gradle dependency notation.
+
+        Returns:
+            str: Dependency string in the format "group:artifact:version" or
+                "group:artifact" if no version is specified.
+        """
         if self.version:
             return f'"{self.group}:{self.artifact}:{self.version}"'
         return f'"{self.group}:{self.artifact}"'
 
     @property
     def declaration(self) -> str:
-        """Get full Gradle declaration."""
+        """Get full Gradle declaration.
+
+        Returns:
+            str: Complete Gradle dependency declaration including scope,
+                wrapped with platform() for BOM dependencies.
+        """
         if self.is_platform:
             return f'{self.scope.value}(platform({self.notation}))'
         return f'{self.scope.value}({self.notation})'
@@ -60,7 +70,12 @@ class GradlePlugin(BaseModel):
 
     @property
     def declaration(self) -> str:
-        """Get plugin declaration for plugins block."""
+        """Get plugin declaration for plugins block.
+
+        Returns:
+            str: Complete plugin declaration string suitable for use in a
+                Gradle plugins block, including version and apply directives.
+        """
         version_part = f' version "{self.version}"' if self.version else ""
         apply_part = " apply false" if not self.apply else ""
         return f'id("{self.plugin_id}"){version_part}{apply_part}'
@@ -157,7 +172,11 @@ class KotlinClass(BaseModel):
 
     @property
     def full_name(self) -> str:
-        """Get fully qualified class name."""
+        """Get fully qualified class name.
+
+        Returns:
+            str: The fully qualified class name in the format "package.ClassName".
+        """
         return f"{self.package}.{self.name}"
 
 
@@ -233,7 +252,11 @@ class KotlinFile(BaseModel):
 
     @property
     def full_path(self) -> str:
-        """Get full file path."""
+        """Get full file path.
+
+        Returns:
+            str: The complete file path including relative path and .kt extension.
+        """
         return f"{self.relative_path}/{self.file_name}.kt"
 
 
@@ -264,7 +287,12 @@ class ResourceFile(BaseModel):
 
     @property
     def directory_name(self) -> str:
-        """Get resource directory name."""
+        """Get resource directory name.
+
+        Returns:
+            str: The resource directory name, including qualifier suffix
+                if present (e.g., "drawable-night" or "values").
+        """
         if self.qualifier:
             return f"{self.resource_type.value}-{self.qualifier}"
         return self.resource_type.value
@@ -305,7 +333,14 @@ class AndroidProject(BaseModel):
     generator_version: str = Field(default="1.0.0")
 
     def get_module(self, name: str) -> GradleModule | None:
-        """Get module by name."""
+        """Get module by name.
+
+        Args:
+            name: The module name to search for (e.g., ":app", ":core:data").
+
+        Returns:
+            The matching GradleModule if found, None otherwise.
+        """
         for module in self.modules:
             if module.module_name == name:
                 return module

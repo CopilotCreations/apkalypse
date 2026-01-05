@@ -56,7 +56,11 @@ class BehaviorModelService:
     """
 
     def __init__(self, storage: StorageBackend) -> None:
-        """Initialize the behavior model service."""
+        """Initialize the behavior model service.
+
+        Args:
+            storage: Backend for persisting behavior models.
+        """
         self.storage = storage
         self.observer_agent = BehavioralObserverAgent()
 
@@ -65,7 +69,18 @@ class BehaviorModelService:
         static_output: StaticAnalysisOutput,
         dynamic_output: DynamicAnalysisOutput,
     ) -> list[ScreenModel]:
-        """Merge screen information from static and dynamic analysis."""
+        """Merge screen information from static and dynamic analysis.
+
+        Combines screens discovered through dynamic exploration with
+        activities declared in the manifest that weren't encountered dynamically.
+
+        Args:
+            static_output: Results from static analysis containing manifest data.
+            dynamic_output: Results from dynamic analysis containing discovered screens.
+
+        Returns:
+            A unified list of screen models from both analysis sources.
+        """
         screens = []
         seen_activities: set[str] = set()
 
@@ -95,7 +110,18 @@ class BehaviorModelService:
         screens: list[ScreenModel],
         transitions: list[StateTransition],
     ) -> list[NavigationRule]:
-        """Infer high-level navigation rules from transitions."""
+        """Infer high-level navigation rules from transitions.
+
+        Analyzes observed state transitions to derive semantic navigation
+        rules that describe how users can move between screens.
+
+        Args:
+            screens: List of all discovered screens in the application.
+            transitions: List of observed state transitions between screens.
+
+        Returns:
+            A list of navigation rules describing possible screen flows.
+        """
         rules = []
         transition_map: dict[str, list[str]] = {}
 
@@ -127,7 +153,18 @@ class BehaviorModelService:
         screens: list[ScreenModel],
         manifest: Any,
     ) -> list[UserIntent]:
-        """Infer user intents from screens and manifest."""
+        """Infer user intents from screens and manifest.
+
+        Analyzes screen names and manifest data to infer what user goals
+        the application supports (e.g., login, registration, browsing).
+
+        Args:
+            screens: List of all discovered screens in the application.
+            manifest: Parsed Android manifest containing app metadata.
+
+        Returns:
+            A list of inferred user intents with priority and frequency info.
+        """
         intents = []
 
         # Infer basic intents based on common patterns
@@ -210,7 +247,18 @@ class BehaviorModelService:
         screens: list[ScreenModel],
         network_calls: list[Any],
     ) -> list[DataFlow]:
-        """Infer data flows from screens and network activity."""
+        """Infer data flows from screens and network activity.
+
+        Analyzes screen properties and observed network calls to determine
+        how data moves through the application between UI and backend.
+
+        Args:
+            screens: List of all discovered screens in the application.
+            network_calls: List of observed network API calls.
+
+        Returns:
+            A list of data flow descriptions connecting sources to destinations.
+        """
         flows = []
 
         # Infer flows from screen types
@@ -244,11 +292,17 @@ class BehaviorModelService:
     async def build(self, input_data: BehaviorModelInput) -> ServiceResult[BehaviorModelOutput]:
         """Build the behavioral model.
 
+        Combines static and dynamic analysis results into a unified,
+        implementation-agnostic behavioral model. The model captures screens,
+        transitions, navigation rules, user intents, and data flows.
+
         Args:
-            input_data: Behavior model input
+            input_data: Input containing APK metadata and analysis results
+                from both static and dynamic analysis phases.
 
         Returns:
-            ServiceResult containing BehaviorModelOutput
+            ServiceResult containing the built BehaviorModel and storage key
+            on success, or an error message on failure.
         """
         import time
 

@@ -241,7 +241,13 @@ class APKalypsePipeline:
     """High-level pipeline interface for programmatic use."""
 
     def __init__(self) -> None:
-        """Initialize the pipeline."""
+        """Initialize the pipeline.
+
+        Sets up configuration and logging for the APKalypse pipeline.
+
+        Attributes:
+            config: The global configuration object loaded from settings.
+        """
         self.config = get_config()
         setup_logging(self.config)
 

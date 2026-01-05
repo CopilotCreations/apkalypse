@@ -72,13 +72,27 @@ class StaticAnalysisService:
     """
 
     def __init__(self, storage: StorageBackend) -> None:
-        """Initialize the static analysis service."""
+        """Initialize the static analysis service.
+
+        Args:
+            storage: Storage backend for APK file access.
+        """
         self.storage = storage
         self.config = get_config()
         self._temp_dirs: list[Path] = []
 
     def _find_tool(self, tool_name: str) -> Path:
-        """Find a tool in PATH or configured location."""
+        """Find a tool in PATH or configured location.
+
+        Args:
+            tool_name: Name of the tool to find (e.g., 'apktool', 'jadx').
+
+        Returns:
+            Path to the tool executable.
+
+        Raises:
+            ToolNotFoundError: If the tool cannot be found.
+        """
         # Check configured paths first
         if tool_name == "apktool" and self.config.tools.apktool_path:
             if self.config.tools.apktool_path.exists():
@@ -111,7 +125,15 @@ class StaticAnalysisService:
         )
 
     async def _run_command(self, cmd: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
-        """Run a shell command asynchronously with real-time output logging."""
+        """Run a shell command asynchronously with real-time output logging.
+
+        Args:
+            cmd: Command and arguments to execute.
+            cwd: Working directory for command execution.
+
+        Returns:
+            Tuple of (return_code, stdout, stderr).
+        """
         cmd_str = " ".join(cmd)
         logger.info("Running command", command=cmd_str, cwd=str(cwd) if cwd else None)
         
@@ -150,7 +172,12 @@ class StaticAnalysisService:
         return process.returncode or 0, stdout_str, stderr_str
 
     async def _decompile_apk(self, apk_path: Path, output_dir: Path) -> None:
-        """Decompile APK using apktool (resources only, no source)."""
+        """Decompile APK using apktool (resources only, no source).
+
+        Args:
+            apk_path: Path to the APK file.
+            output_dir: Directory to extract resources to.
+        """
         try:
             apktool = self._find_tool("apktool")
             logger.info("Found apktool", path=str(apktool))
@@ -170,7 +197,12 @@ class StaticAnalysisService:
             logger.info("APK decompilation completed successfully")
 
     async def _fallback_extract(self, apk_path: Path, output_dir: Path) -> None:
-        """Fallback extraction using zipfile (limited but always works)."""
+        """Fallback extraction using zipfile (limited but always works).
+
+        Args:
+            apk_path: Path to the APK file.
+            output_dir: Directory to extract resources to.
+        """
         import zipfile
 
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -181,7 +213,14 @@ class StaticAnalysisService:
                     zf.extract(name, output_dir)
 
     def _parse_manifest(self, manifest_path: Path) -> ManifestData:
-        """Parse AndroidManifest.xml into structured data."""
+        """Parse AndroidManifest.xml into structured data.
+
+        Args:
+            manifest_path: Path to the AndroidManifest.xml file.
+
+        Returns:
+            Parsed manifest data with package info, permissions, and components.
+        """
         if not manifest_path.exists():
             return ManifestData(package_name="unknown")
 
@@ -290,13 +329,27 @@ class StaticAnalysisService:
         )
 
     def _parse_binary_manifest(self, manifest_path: Path) -> ManifestData:
-        """Parse binary AndroidManifest.xml (fallback)."""
+        """Parse binary AndroidManifest.xml (fallback).
+
+        Args:
+            manifest_path: Path to the binary AndroidManifest.xml file.
+
+        Returns:
+            Minimal manifest data when binary parsing is not available.
+        """
         # Binary manifest parsing requires additional tools
         # Return minimal manifest for now
         return ManifestData(package_name="unknown.binary")
 
     def _parse_layouts(self, res_dir: Path) -> list[UILayoutInfo]:
-        """Parse layout XML files into structured info."""
+        """Parse layout XML files into structured info.
+
+        Args:
+            res_dir: Path to the res directory containing layouts.
+
+        Returns:
+            List of parsed UI layout information.
+        """
         layouts = []
         layout_dir = res_dir / "layout"
 
@@ -340,7 +393,14 @@ class StaticAnalysisService:
         return layouts
 
     def _parse_strings(self, res_dir: Path) -> dict[str, str]:
-        """Parse strings.xml into dictionary."""
+        """Parse strings.xml into dictionary.
+
+        Args:
+            res_dir: Path to the res directory containing values/strings.xml.
+
+        Returns:
+            Dictionary mapping string resource names to their values.
+        """
         strings = {}
         strings_file = res_dir / "values" / "strings.xml"
 
@@ -362,7 +422,14 @@ class StaticAnalysisService:
         return strings
 
     def _detect_frameworks(self, decompiled_dir: Path) -> list[str]:
-        """Detect frameworks used in the app."""
+        """Detect frameworks used in the app.
+
+        Args:
+            decompiled_dir: Path to the decompiled APK directory.
+
+        Returns:
+            List of detected framework names (e.g., 'retrofit', 'firebase').
+        """
         frameworks = []
 
         # Check smali directories for common libraries
@@ -398,10 +465,14 @@ class StaticAnalysisService:
         """Perform static analysis on an APK.
 
         Args:
-            input_data: Static analysis input
+            input_data: Static analysis input containing APK path and metadata.
 
         Returns:
-            ServiceResult containing StaticAnalysisOutput
+            ServiceResult containing StaticAnalysisOutput with manifest,
+            layouts, strings, and detected frameworks.
+
+        Raises:
+            ServiceError: If static analysis fails.
         """
         import time
 
@@ -474,7 +545,11 @@ class StaticAnalysisService:
             )
 
     async def _cleanup(self) -> None:
-        """Clean up temporary directories."""
+        """Clean up temporary directories.
+
+        Removes all temporary directories created during analysis and clears
+        the internal tracking list.
+        """
         for temp_dir in self._temp_dirs:
             if temp_dir.exists():
                 shutil.rmtree(temp_dir, ignore_errors=True)

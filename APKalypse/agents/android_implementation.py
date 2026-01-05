@@ -56,21 +56,47 @@ class AndroidImplementationAgent(Agent[CodeGenInput, CodeGenOutput]):
 
     @property
     def name(self) -> str:
+        """Get the agent's unique identifier name.
+
+        Returns:
+            str: The name identifier for this agent.
+        """
         return self.NAME
 
     @property
     def description(self) -> str:
+        """Get a human-readable description of the agent's purpose.
+
+        Returns:
+            str: A description of what this agent does.
+        """
         return "Generates Kotlin code for Android applications"
 
     @property
     def input_type(self) -> type[CodeGenInput]:
+        """Get the Pydantic model type for agent input validation.
+
+        Returns:
+            type[CodeGenInput]: The input model class for code generation requests.
+        """
         return CodeGenInput
 
     @property
     def output_type(self) -> type[CodeGenOutput]:
+        """Get the Pydantic model type for agent output validation.
+
+        Returns:
+            type[CodeGenOutput]: The output model class for generated code results.
+        """
         return CodeGenOutput
 
     def get_prompt_template(self) -> PromptTemplate:
+        """Get the prompt template for LLM code generation.
+
+        Returns:
+            PromptTemplate: The template containing system and user prompts
+                for generating Android/Kotlin code.
+        """
         return PromptTemplate(
             template_id="android_implementation_v1",
             version="1.0.0",
@@ -140,6 +166,15 @@ Generate complete, compilable code. Include all necessary imports.
         )
 
     def prepare_input(self, input_data: CodeGenInput) -> dict[str, Any]:
+        """Transform input data into template variables for prompt rendering.
+
+        Args:
+            input_data: The validated input containing component specifications.
+
+        Returns:
+            dict[str, Any]: A dictionary of template variables ready for
+                string formatting in the prompt template.
+        """
         import json
 
         spec = input_data.screen_spec or input_data.data_spec or {}
@@ -154,6 +189,15 @@ Generate complete, compilable code. Include all necessary imports.
         }
 
     def validate_output(self, output: CodeGenOutput) -> list[str]:
+        """Validate the generated output and collect any warnings.
+
+        Args:
+            output: The generated code output to validate.
+
+        Returns:
+            list[str]: A list of warning messages for any validation issues found,
+                such as empty files or TODO markers in the generated code.
+        """
         warnings = []
         if not output.files:
             warnings.append("No files generated")

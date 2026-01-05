@@ -136,7 +136,20 @@ class Config(BaseModel):
 
     @classmethod
     def from_env(cls) -> Config:
-        """Create configuration from environment variables."""
+        """Create configuration from environment variables.
+
+        Builds a Config instance by reading environment variables with the B2B_
+        prefix and applying sensible defaults for unset values.
+
+        Returns:
+            Config: A fully initialized configuration object with values sourced
+                from environment variables or their defaults.
+
+        Example:
+            >>> config = Config.from_env()
+            >>> print(config.log_level)
+            'INFO'
+        """
         return cls(
             log_level=os.environ.get("B2B_LOG_LEVEL", "INFO"),  # type: ignore
             emulator=EmulatorConfig(
@@ -162,5 +175,17 @@ class Config(BaseModel):
 
 @lru_cache(maxsize=1)
 def get_config() -> Config:
-    """Get cached configuration instance."""
+    """Get cached configuration instance.
+
+    Returns a singleton Config object, creating it from environment variables
+    on first call and returning the cached instance on subsequent calls.
+
+    Returns:
+        Config: The cached configuration instance for the application.
+
+    Example:
+        >>> config = get_config()
+        >>> config.project_name
+        'APKalypse'
+    """
     return Config.from_env()

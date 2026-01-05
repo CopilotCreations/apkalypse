@@ -55,12 +55,25 @@ class SpecGenerationService:
     """
 
     def __init__(self, storage: StorageBackend) -> None:
-        """Initialize the spec generation service."""
+        """Initialize the spec generation service.
+
+        Args:
+            storage: Backend for persisting generated specifications.
+        """
         self.storage = storage
         self.spec_agent = ProductSpecAuthorAgent()
 
     def _create_screen_specs(self, behavior_model: BehaviorModel) -> list[ScreenSpec]:
-        """Create screen specifications from behavior model."""
+        """Create screen specifications from behavior model.
+
+        Args:
+            behavior_model: The behavior model containing screen definitions,
+                transitions, and interactive elements.
+
+        Returns:
+            A list of ScreenSpec objects representing each screen's
+            specification including components, entry points, and exit points.
+        """
         specs = []
 
         for screen in behavior_model.screens:
@@ -101,7 +114,19 @@ class SpecGenerationService:
         behavior_model: BehaviorModel,
         agent_output: ProductSpecOutput | None,
     ) -> list[FunctionalRequirement]:
-        """Create functional requirements."""
+        """Create functional requirements from behavior model and agent output.
+
+        Args:
+            behavior_model: The behavior model containing navigation rules
+                and user intents to derive requirements from.
+            agent_output: Optional agent-generated output containing
+                pre-formulated requirements. If None, requirements are
+                generated from the behavior model directly.
+
+        Returns:
+            A list of FunctionalRequirement objects representing the
+            functional requirements for the application.
+        """
         requirements = []
 
         # Use agent-generated requirements if available
@@ -147,7 +172,19 @@ class SpecGenerationService:
         self,
         behavior_model: BehaviorModel,
     ) -> list[NonFunctionalRequirement]:
-        """Create non-functional requirements."""
+        """Create non-functional requirements based on behavior model.
+
+        Generates standard NFRs for performance, usability, accessibility,
+        security, and reliability based on the behavior model properties.
+
+        Args:
+            behavior_model: The behavior model used to determine applicable
+                NFRs (e.g., security requirements if auth is required).
+
+        Returns:
+            A list of NonFunctionalRequirement objects covering performance,
+            usability, accessibility, security, and reliability categories.
+        """
         requirements = []
 
         # Performance NFRs
@@ -213,13 +250,19 @@ class SpecGenerationService:
         return requirements
 
     async def generate(self, input_data: SpecGenerationInput) -> ServiceResult[SpecGenerationOutput]:
-        """Generate product specification.
+        """Generate product specification from a behavioral model.
+
+        Uses AI agents to transform a behavioral model into a formal,
+        implementation-agnostic product specification. Falls back to
+        rule-based generation if the agent fails.
 
         Args:
-            input_data: Spec generation input
+            input_data: The specification generation input containing the
+                behavior model, app name, and run ID.
 
         Returns:
-            ServiceResult containing SpecGenerationOutput
+            ServiceResult containing SpecGenerationOutput with the generated
+            behavioral spec and storage key, or an error if generation fails.
         """
         import time
 

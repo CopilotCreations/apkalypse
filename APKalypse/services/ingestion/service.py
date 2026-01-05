@@ -64,7 +64,14 @@ class IngestionService:
         self.storage = storage
 
     def _compute_file_hashes(self, file_path: Path) -> tuple[str, str, str]:
-        """Compute SHA-256, SHA-1, and MD5 hashes of a file."""
+        """Compute SHA-256, SHA-1, and MD5 hashes of a file.
+
+        Args:
+            file_path: Path to the file to hash.
+
+        Returns:
+            A tuple containing (sha256_hash, sha1_hash, md5_hash) as hex strings.
+        """
         sha256 = hashlib.sha256()
         sha1 = hashlib.sha1()
         md5 = hashlib.md5()
@@ -78,7 +85,17 @@ class IngestionService:
         return sha256.hexdigest(), sha1.hexdigest(), md5.hexdigest()
 
     def _validate_apk(self, apk_path: Path) -> None:
-        """Validate that the file is a valid APK."""
+        """Validate that the file is a valid APK.
+
+        Checks that the file exists, has an .apk extension, is a valid ZIP archive,
+        and contains required APK files (AndroidManifest.xml and DEX files).
+
+        Args:
+            apk_path: Path to the APK file to validate.
+
+        Raises:
+            ValidationError: If the APK is invalid or missing required files.
+        """
         if not apk_path.exists():
             raise ValidationError(
                 message=f"APK file not found: {apk_path}",
@@ -113,7 +130,18 @@ class IngestionService:
             )
 
     def _extract_basic_info(self, apk_path: Path) -> dict[str, Any]:
-        """Extract basic info from APK without full decompilation."""
+        """Extract basic info from APK without full decompilation.
+
+        Extracts file size, resource counts, and detects common embedded libraries
+        by inspecting the APK's ZIP contents.
+
+        Args:
+            apk_path: Path to the APK file.
+
+        Returns:
+            A dictionary containing file_size, file_name, resource_counts,
+            and embedded_libraries.
+        """
         info = {
             "file_size": apk_path.stat().st_size,
             "file_name": apk_path.name,
@@ -364,7 +392,16 @@ def extract_quick_apk_info(apk_path: Path) -> QuickAPKInfo:
 
 
 def _parse_manifest_quick(manifest_path: Path, existing_app_name: str) -> tuple[str, str]:
-    """Parse AndroidManifest.xml quickly for package name and app label."""
+    """Parse AndroidManifest.xml quickly for package name and app label.
+
+    Args:
+        manifest_path: Path to the decoded AndroidManifest.xml file.
+        existing_app_name: Previously extracted app name to use as fallback.
+
+    Returns:
+        A tuple containing (package_name, app_name). Returns "unknown" for
+        package_name if parsing fails.
+    """
     package_name = "unknown"
     app_name = existing_app_name
 

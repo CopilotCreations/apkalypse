@@ -30,7 +30,14 @@ console = Console()
 
 
 def version_callback(value: bool) -> None:
-    """Show version and exit."""
+    """Display the APKalypse version and exit the application.
+
+    Args:
+        value: If True, prints the version and raises typer.Exit.
+
+    Raises:
+        typer.Exit: Always raised when value is True to terminate the CLI.
+    """
     if value:
         from . import __version__
         console.print(f"APKalypse v{__version__}")
@@ -48,7 +55,14 @@ def main(
         help="Show version and exit",
     ),
 ) -> None:
-    """APKalypse: APK to greenfield Android app pipeline."""
+    """Main callback for the APKalypse CLI application.
+
+    This is the entry point callback that handles global options like --version
+    before any subcommand is executed.
+
+    Args:
+        version: If True, displays version info and exits (handled by callback).
+    """
     pass
 
 
@@ -106,6 +120,19 @@ def run(
 
     Analyzes an APK file, extracts behavioral specifications,
     and generates a greenfield Android application.
+
+    Args:
+        apk_path: Path to the APK file to analyze.
+        app_name: Name for the generated application. Auto-detected from APK if not provided.
+        package_name: Package name for generated code. Auto-detected from APK if not provided.
+        play_store_url: Optional Google Play Store URL for additional metadata.
+        output_dir: Output directory for the generated project.
+        exploration_time: Dynamic analysis exploration time in seconds.
+        skip_dynamic: If True, skips dynamic analysis and uses static-only mode.
+        verbose: If True, enables verbose debug logging.
+
+    Raises:
+        typer.Exit: Raised with code 1 if the pipeline fails.
     """
     # Setup logging early so extraction logs are visible
     config = get_config()
@@ -141,6 +168,15 @@ def run(
 
     # Run pipeline
     async def run_async() -> None:
+        """Execute the pipeline asynchronously and display results.
+
+        Runs the full APKalypse pipeline including ingestion, analysis,
+        specification generation, code generation, and verification.
+        Displays a progress spinner and results summary upon completion.
+
+        Raises:
+            typer.Exit: Raised with code 1 if the pipeline fails.
+        """
         from .orchestration import run_pipeline
 
         with Progress(
@@ -219,12 +255,34 @@ def analyze(
         help="Skip dynamic analysis",
     ),
 ) -> None:
-    """Analyze an APK and extract behavioral model (without code generation)."""
+    """Analyze an APK and extract behavioral model without code generation.
+
+    Performs APK ingestion and static analysis to extract metadata,
+    manifest information, and detected frameworks. Useful for inspecting
+    an APK before running the full pipeline.
+
+    Args:
+        apk_path: Path to the APK file to analyze.
+        output: Output directory for analysis results.
+        skip_dynamic: If True, skips dynamic analysis.
+
+    Raises:
+        typer.Exit: Raised with code 1 if ingestion or analysis fails.
+    """
     setup_logging(get_config())
 
     console.print(f"[bold]Analyzing:[/bold] {apk_path}")
 
     async def run_async() -> None:
+        """Execute APK analysis asynchronously and display results.
+
+        Performs ingestion and static analysis on the APK file,
+        then displays a summary table of the extracted information
+        including package info, SDK versions, and detected frameworks.
+
+        Raises:
+            typer.Exit: Raised with code 1 if ingestion or static analysis fails.
+        """
         from .storage import LocalStorageBackend
         from .services.ingestion import IngestionService
         from .services.ingestion.service import IngestionInput
@@ -290,7 +348,14 @@ def config(
         help="Show current configuration",
     ),
 ) -> None:
-    """Show or manage configuration."""
+    """Display the current APKalypse configuration settings.
+
+    Shows all configuration values including logging, storage, agent,
+    emulator, and compliance settings in a formatted table.
+
+    Args:
+        show: If True, displays the current configuration (default behavior).
+    """
     cfg = get_config()
 
     table = Table(title="Current Configuration")
@@ -326,7 +391,17 @@ def verify(
         resolve_path=True,
     ),
 ) -> None:
-    """Verify a generated project can build."""
+    """Verify that a generated project has valid structure and can build.
+
+    Checks for the presence of build.gradle.kts and gradle wrapper,
+    then runs a dry-run gradle check to validate the project structure.
+
+    Args:
+        project_dir: Path to the generated project directory to verify.
+
+    Raises:
+        typer.Exit: Raised with code 1 if build files are missing or check fails.
+    """
     console.print(f"[bold]Verifying project:[/bold] {project_dir}")
 
     import subprocess
@@ -369,7 +444,12 @@ def verify(
 
 
 def main() -> None:
-    """Entry point for the CLI."""
+    """Entry point for the APKalypse CLI application.
+
+    This function serves as the main entry point when the module is run
+    directly or via the installed console script. It invokes the Typer
+    application to parse arguments and execute the appropriate command.
+    """
     app()
 
 

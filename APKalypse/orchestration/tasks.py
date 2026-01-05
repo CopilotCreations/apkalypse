@@ -40,7 +40,15 @@ from ..storage import LocalStorageBackend
 
 
 def get_storage() -> LocalStorageBackend:
-    """Get storage backend."""
+    """Get storage backend configured from application settings.
+
+    Retrieves the application configuration and creates a local storage
+    backend using the configured base path.
+
+    Returns:
+        LocalStorageBackend: A storage backend instance configured with
+            the base path from application settings.
+    """
     from ..core.config import get_config
     config = get_config()
     return LocalStorageBackend(config.storage.base_path)

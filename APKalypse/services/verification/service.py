@@ -96,12 +96,28 @@ class VerificationService:
     """
 
     def __init__(self, storage: StorageBackend) -> None:
-        """Initialize the verification service."""
+        """Initialize the verification service.
+
+        Args:
+            storage: Backend for storing verification reports and artifacts.
+        """
         self.storage = storage
         self.parity_agent = QAParityAgent()
 
     def _generate_test_scenarios(self, behavior_model: BehaviorModel) -> list[TestScenario]:
-        """Generate test scenarios from behavior model."""
+        """Generate test scenarios from behavior model.
+
+        Creates navigation, user intent, and screen presence test scenarios
+        based on the behavior model's transitions, intents, and screens.
+
+        Args:
+            behavior_model: The behavior model containing screens, transitions,
+                and user intents to generate test scenarios from.
+
+        Returns:
+            A list of TestScenario objects covering navigation flows,
+            user intents, and screen presence verification.
+        """
         scenarios = []
 
         # Navigation scenarios
@@ -152,7 +168,21 @@ class VerificationService:
         behavior_model: BehaviorModel,
         project: AndroidProject,
     ) -> tuple[float, list[str], list[ParityIssue]]:
-        """Verify that all screens are represented in generated code."""
+        """Verify that all screens are represented in generated code.
+
+        Compares expected screens from the behavior model against the
+        generated source files to identify missing screen implementations.
+
+        Args:
+            behavior_model: The behavior model containing expected screens.
+            project: The generated Android project to verify against.
+
+        Returns:
+            A tuple containing:
+                - Coverage score (0.0 to 1.0) indicating screen implementation ratio.
+                - List of matching behavior descriptions for implemented screens.
+                - List of ParityIssue objects for missing screens.
+        """
         matching = []
         issues = []
 
@@ -190,7 +220,21 @@ class VerificationService:
         behavior_model: BehaviorModel,
         project: AndroidProject,
     ) -> tuple[float, list[str], list[ParityIssue]]:
-        """Verify that navigation flows are represented."""
+        """Verify that navigation flows are represented.
+
+        Checks that the generated project contains a navigation implementation
+        and that routes are defined for all expected screens.
+
+        Args:
+            behavior_model: The behavior model containing expected transitions.
+            project: The generated Android project to verify against.
+
+        Returns:
+            A tuple containing:
+                - Coverage score (0.0 or 1.0) based on navigation presence.
+                - List of matching behavior descriptions for navigation elements.
+                - List of ParityIssue objects for missing navigation components.
+        """
         matching = []
         issues = []
 
@@ -228,7 +272,20 @@ class VerificationService:
         self,
         project: AndroidProject,
     ) -> tuple[float, list[str], list[ParityIssue]]:
-        """Verify architectural compliance."""
+        """Verify architectural compliance.
+
+        Checks for required architectural patterns including ViewModel,
+        Hilt dependency injection, and Jetpack Compose usage.
+
+        Args:
+            project: The generated Android project to verify against.
+
+        Returns:
+            A tuple containing:
+                - Compliance score (0.0 to 1.0) based on patterns found.
+                - List of matching behavior descriptions for implemented patterns.
+                - List of ParityIssue objects for missing architectural patterns.
+        """
         matching = []
         issues = []
 

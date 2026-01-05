@@ -71,21 +71,47 @@ class ProductSpecAuthorAgent(Agent[ProductSpecInput, ProductSpecOutput]):
 
     @property
     def name(self) -> str:
+        """Get the agent's unique identifier name.
+
+        Returns:
+            str: The name identifier for this agent.
+        """
         return self.NAME
 
     @property
     def description(self) -> str:
+        """Get a human-readable description of the agent's purpose.
+
+        Returns:
+            str: A brief description of what this agent does.
+        """
         return "Authors implementation-agnostic product specifications"
 
     @property
     def input_type(self) -> type[ProductSpecInput]:
+        """Get the Pydantic model type for agent input.
+
+        Returns:
+            type[ProductSpecInput]: The input model class.
+        """
         return ProductSpecInput
 
     @property
     def output_type(self) -> type[ProductSpecOutput]:
+        """Get the Pydantic model type for agent output.
+
+        Returns:
+            type[ProductSpecOutput]: The output model class.
+        """
         return ProductSpecOutput
 
     def get_prompt_template(self) -> PromptTemplate:
+        """Get the prompt template for LLM interaction.
+
+        Returns:
+            PromptTemplate: The template containing system and user prompts
+                for generating product specifications.
+        """
         return PromptTemplate(
             template_id="product_spec_author_v1",
             version="1.0.0",
@@ -166,6 +192,19 @@ Generate a complete product specification as JSON with this structure:
         )
 
     def prepare_input(self, input_data: ProductSpecInput) -> dict[str, Any]:
+        """Transform structured input into template variables.
+
+        Converts the ProductSpecInput model into a dictionary of string
+        values suitable for formatting into the prompt template.
+
+        Args:
+            input_data: The structured input containing app details,
+                screens, user intents, navigation flows, and data entities.
+
+        Returns:
+            dict[str, Any]: A dictionary with keys matching template
+                placeholders and formatted string values.
+        """
         import json
         return {
             "app_name": input_data.app_name,
@@ -177,6 +216,18 @@ Generate a complete product specification as JSON with this structure:
         }
 
     def validate_output(self, output: ProductSpecOutput) -> list[str]:
+        """Validate the generated product specification output.
+
+        Checks the output for potential quality issues and returns
+        warnings for any detected problems.
+
+        Args:
+            output: The generated product specification to validate.
+
+        Returns:
+            list[str]: A list of warning messages for any detected issues.
+                Empty list if no issues found.
+        """
         warnings = []
         if len(output.functional_requirements) < 3:
             warnings.append("Very few functional requirements generated")

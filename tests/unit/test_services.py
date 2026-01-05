@@ -16,7 +16,12 @@ class TestIngestionService:
     """Tests for the ingestion service."""
 
     async def test_ingest_valid_apk(self, temp_dir, sample_apk):
-        """Test ingesting a valid APK."""
+        """Test ingesting a valid APK.
+
+        Args:
+            temp_dir: Temporary directory fixture for test isolation.
+            sample_apk: Sample APK file fixture for testing.
+        """
         storage = LocalStorageBackend(temp_dir)
         service = IngestionService(storage)
         
@@ -29,7 +34,11 @@ class TestIngestionService:
         assert result.data.normalized_apk_path is not None
 
     async def test_ingest_nonexistent_file(self, temp_dir):
-        """Test ingesting a non-existent file."""
+        """Test ingesting a non-existent file.
+
+        Args:
+            temp_dir: Temporary directory fixture for test isolation.
+        """
         storage = LocalStorageBackend(temp_dir)
         service = IngestionService(storage)
         
@@ -40,7 +49,11 @@ class TestIngestionService:
         assert "not found" in result.error.lower()
 
     async def test_ingest_invalid_file(self, temp_dir):
-        """Test ingesting an invalid file."""
+        """Test ingesting an invalid file.
+
+        Args:
+            temp_dir: Temporary directory fixture for test isolation.
+        """
         storage = LocalStorageBackend(temp_dir)
         service = IngestionService(storage)
         
@@ -59,7 +72,11 @@ class TestComplianceGuard:
     """Tests for the compliance guard service."""
 
     async def test_check_clean_code(self, temp_dir):
-        """Test compliance check with clean code."""
+        """Test compliance check with clean code.
+
+        Args:
+            temp_dir: Temporary directory fixture for test isolation.
+        """
         storage = LocalStorageBackend(temp_dir)
         guard = ComplianceGuard(storage)
         
@@ -86,7 +103,11 @@ class TestComplianceGuard:
         assert result.data.compliance_report.passed
 
     async def test_check_suspicious_patterns(self, temp_dir):
-        """Test compliance check with suspicious patterns."""
+        """Test compliance check with suspicious patterns.
+
+        Args:
+            temp_dir: Temporary directory fixture for test isolation.
+        """
         storage = LocalStorageBackend(temp_dir)
         guard = ComplianceGuard(storage)
         
@@ -110,7 +131,11 @@ class TestComplianceGuard:
         assert len(report.violations) > 0
 
     async def test_calculate_similarity(self, temp_dir):
-        """Test code similarity calculation."""
+        """Test code similarity calculation.
+
+        Args:
+            temp_dir: Temporary directory fixture for test isolation.
+        """
         storage = LocalStorageBackend(temp_dir)
         guard = ComplianceGuard(storage)
         
@@ -139,7 +164,11 @@ class TestComplianceGuard:
         assert similarity < 0.7
 
     async def test_suspicious_pattern_detection(self, temp_dir):
-        """Test suspicious pattern detection."""
+        """Test suspicious pattern detection.
+
+        Args:
+            temp_dir: Temporary directory fixture for test isolation.
+        """
         storage = LocalStorageBackend(temp_dir)
         guard = ComplianceGuard(storage)
         

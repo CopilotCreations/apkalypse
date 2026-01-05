@@ -300,25 +300,53 @@ class BehaviorModel(BaseModel):
     coverage_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Exploration coverage")
 
     def update_statistics(self) -> None:
-        """Update derived statistics from model data."""
+        """Update derived statistics from model data.
+
+        Recalculates total counts for screens, transitions, and user intents
+        based on the current model state. Also updates the updated_at timestamp.
+
+        Returns:
+            None
+        """
         self.total_screens = len(self.screens)
         self.total_transitions = len(self.transitions)
         self.total_user_intents = len(self.user_intents)
         self.updated_at = datetime.utcnow()
 
     def get_screen(self, screen_id: str) -> ScreenModel | None:
-        """Get screen by ID."""
+        """Get screen by ID.
+
+        Args:
+            screen_id: The unique identifier of the screen to retrieve.
+
+        Returns:
+            The ScreenModel with the matching ID, or None if not found.
+        """
         for screen in self.screens:
             if screen.screen_id == screen_id:
                 return screen
         return None
 
     def get_transitions_from(self, screen_id: str) -> list[StateTransition]:
-        """Get all transitions originating from a screen."""
+        """Get all transitions originating from a screen.
+
+        Args:
+            screen_id: The unique identifier of the source screen.
+
+        Returns:
+            A list of StateTransition objects that start from the given screen.
+        """
         return [t for t in self.transitions if t.from_screen_id == screen_id]
 
     def get_transitions_to(self, screen_id: str) -> list[StateTransition]:
-        """Get all transitions leading to a screen."""
+        """Get all transitions leading to a screen.
+
+        Args:
+            screen_id: The unique identifier of the destination screen.
+
+        Returns:
+            A list of StateTransition objects that end at the given screen.
+        """
         return [t for t in self.transitions if t.to_screen_id == screen_id]
 
     class Config:

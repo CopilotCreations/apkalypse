@@ -19,7 +19,11 @@ class TestPromptTemplate:
     """Tests for prompt templates."""
 
     def test_render_system(self):
-        """Test system prompt rendering."""
+        """Test system prompt rendering.
+
+        Verifies that the system prompt is rendered correctly without
+        any template substitutions.
+        """
         template = PromptTemplate(
             template_id="test",
             version="1.0.0",
@@ -29,7 +33,11 @@ class TestPromptTemplate:
         assert template.render_system() == "You are a helpful assistant."
 
     def test_render_user(self):
-        """Test user prompt rendering."""
+        """Test user prompt rendering.
+
+        Verifies that template variables are correctly substituted
+        in the user prompt.
+        """
         template = PromptTemplate(
             template_id="test",
             version="1.0.0",
@@ -40,7 +48,11 @@ class TestPromptTemplate:
         assert "test data" in rendered
 
     def test_render_user_with_format_instructions(self):
-        """Test user prompt with format instructions."""
+        """Test user prompt with format instructions.
+
+        Verifies that output format instructions are appended to the
+        rendered user prompt when provided.
+        """
         template = PromptTemplate(
             template_id="test",
             version="1.0.0",
@@ -52,7 +64,11 @@ class TestPromptTemplate:
         assert "Return JSON." in rendered
 
     def test_get_hash(self):
-        """Test deterministic hash generation."""
+        """Test deterministic hash generation.
+
+        Verifies that the template hash is consistent across multiple
+        calls and has the expected length.
+        """
         template = PromptTemplate(
             template_id="test",
             version="1.0.0",
@@ -69,14 +85,22 @@ class TestBehavioralObserverAgent:
     """Tests for the behavioral observer agent."""
 
     def test_agent_properties(self):
-        """Test agent property accessors."""
+        """Test agent property accessors.
+
+        Verifies that the agent exposes the correct name, input type,
+        and output type properties.
+        """
         agent = BehavioralObserverAgent()
         assert agent.name == "behavioral_observer"
         assert agent.input_type == BehavioralObserverInput
         assert agent.output_type == BehavioralObserverOutput
 
     def test_prepare_input(self):
-        """Test input preparation."""
+        """Test input preparation.
+
+        Verifies that the agent correctly transforms structured input
+        into a dictionary suitable for prompt template rendering.
+        """
         agent = BehavioralObserverAgent()
         input_data = BehavioralObserverInput(
             screen_hierarchy="<root><button/></root>",
@@ -93,7 +117,11 @@ class TestBehavioralObserverAgent:
         assert "Home, Welcome" in prepared["previous_screens"]
 
     def test_validate_output_low_confidence(self):
-        """Test output validation with low confidence."""
+        """Test output validation with low confidence.
+
+        Verifies that the agent generates warnings when the output
+        confidence score falls below the acceptable threshold.
+        """
         agent = BehavioralObserverAgent()
         from src.agents.behavioral_observer import ScreenObservation
         
@@ -117,13 +145,21 @@ class TestProductSpecAuthorAgent:
     """Tests for the product spec author agent."""
 
     def test_agent_properties(self):
-        """Test agent property accessors."""
+        """Test agent property accessors.
+
+        Verifies that the agent exposes the correct name and description
+        indicating its implementation-agnostic nature.
+        """
         agent = ProductSpecAuthorAgent()
         assert agent.name == "product_spec_author"
         assert "implementation-agnostic" in agent.description.lower()
 
     def test_prepare_input(self):
-        """Test input preparation."""
+        """Test input preparation.
+
+        Verifies that the agent correctly transforms structured input
+        including app metadata, screens, intents, and navigation flows.
+        """
         agent = ProductSpecAuthorAgent()
         input_data = ProductSpecInput(
             app_name="Test App",
@@ -143,7 +179,11 @@ class TestAgentContext:
     """Tests for agent context."""
 
     def test_context_creation(self):
-        """Test context creation."""
+        """Test context creation.
+
+        Verifies that an AgentContext can be created with required
+        fields and that optional fields default to None.
+        """
         context = AgentContext(
             run_id="run_123",
             stage="analysis",
@@ -153,7 +193,11 @@ class TestAgentContext:
         assert context.temperature_override is None
 
     def test_context_with_overrides(self):
-        """Test context with overrides."""
+        """Test context with overrides.
+
+        Verifies that temperature and max_tokens overrides are correctly
+        stored in the context when provided.
+        """
         context = AgentContext(
             run_id="run_123",
             stage="analysis",
@@ -168,7 +212,11 @@ class TestAgentResponse:
     """Tests for agent responses."""
 
     def test_response_creation(self):
-        """Test response creation."""
+        """Test response creation.
+
+        Verifies that a successful AgentResponse correctly stores
+        output data and token usage statistics.
+        """
         response = AgentResponse(
             success=True,
             output={"key": "value"},
@@ -180,7 +228,11 @@ class TestAgentResponse:
         assert response.total_tokens == 150
 
     def test_failed_response(self):
-        """Test failed response."""
+        """Test failed response.
+
+        Verifies that a failed AgentResponse correctly stores the error
+        message and has no output data.
+        """
         response = AgentResponse(
             success=False,
             error="API error",

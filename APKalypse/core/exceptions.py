@@ -20,6 +20,11 @@ class APKalypseError(Exception):
     cause: Exception | None = None
 
     def __str__(self) -> str:
+        """Return a formatted string representation of the error.
+
+        Returns:
+            str: Error message with optional context and cause information.
+        """
         ctx = f" | context: {self.context}" if self.context else ""
         cause = f" | caused by: {self.cause}" if self.cause else ""
         return f"{self.message}{ctx}{cause}"
@@ -34,6 +39,11 @@ class ValidationError(APKalypseError):
     actual_value: Any = None
 
     def __str__(self) -> str:
+        """Return a formatted validation error message.
+
+        Returns:
+            str: Error message prefixed with field name if available.
+        """
         base = super().__str__()
         if self.field_name:
             return f"Validation failed for '{self.field_name}': {base}"
@@ -49,6 +59,11 @@ class ServiceError(APKalypseError):
     retryable: bool = False
 
     def __str__(self) -> str:
+        """Return a formatted service error message.
+
+        Returns:
+            str: Error message with service name, operation, and retry status.
+        """
         base = super().__str__()
         retry_hint = " (retryable)" if self.retryable else " (non-retryable)"
         return f"[{self.service_name}.{self.operation}]{retry_hint}: {base}"
@@ -62,6 +77,11 @@ class PipelineError(APKalypseError):
     pipeline_run_id: str = ""
 
     def __str__(self) -> str:
+        """Return a formatted pipeline error message.
+
+        Returns:
+            str: Error message with pipeline stage and run ID.
+        """
         base = super().__str__()
         return f"Pipeline error at stage '{self.stage}' (run: {self.pipeline_run_id}): {base}"
 
@@ -79,6 +99,11 @@ class ComplianceViolationError(APKalypseError):
     violation_type: str = ""
 
     def __str__(self) -> str:
+        """Return a formatted compliance violation message.
+
+        Returns:
+            str: Error message with rule ID, violation type, and artifact path.
+        """
         return (
             f"COMPLIANCE VIOLATION [{self.rule_id}]: {self.message} | "
             f"type: {self.violation_type} | artifact: {self.artifact_path}"
@@ -93,6 +118,7 @@ class EmulatorError(ServiceError):
     adb_port: int = 0
 
     def __post_init__(self) -> None:
+        """Initialize the emulator error with the service name set to 'emulator'."""
         self.service_name = "emulator"
 
 
@@ -105,6 +131,11 @@ class ToolNotFoundError(APKalypseError):
     install_hint: str = ""
 
     def __str__(self) -> str:
+        """Return a formatted tool not found error message.
+
+        Returns:
+            str: Error message with tool name, expected path, and install hint.
+        """
         hint = f" Install hint: {self.install_hint}" if self.install_hint else ""
         return f"Tool '{self.tool_name}' not found at '{self.expected_path}'.{hint}"
 
@@ -117,8 +148,14 @@ class AgentError(ServiceError):
     prompt_hash: str = ""
 
     def __post_init__(self) -> None:
+        """Initialize the agent error with the service name set to 'agent'."""
         self.service_name = "agent"
 
     def __str__(self) -> str:
+        """Return a formatted agent error message.
+
+        Returns:
+            str: Error message prefixed with the agent name.
+        """
         base = super().__str__()
         return f"[Agent: {self.agent_name}] {base}"

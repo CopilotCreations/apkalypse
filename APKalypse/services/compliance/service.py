@@ -85,7 +85,12 @@ class ComplianceGuard:
     """
 
     def __init__(self, storage: StorageBackend) -> None:
-        """Initialize the compliance guard."""
+        """Initialize the compliance guard.
+
+        Args:
+            storage: Storage backend for persisting compliance reports and
+                loading decompiled artifacts.
+        """
         self.storage = storage
         self.config = get_config().compliance
 
@@ -101,7 +106,18 @@ class ComplianceGuard:
     ]
 
     def _normalize_code(self, code: str) -> str:
-        """Normalize code for comparison."""
+        """Normalize code for comparison.
+
+        Strips comments, whitespace, and string literals to focus on
+        code structure when comparing similarity.
+
+        Args:
+            code: Raw source code to normalize.
+
+        Returns:
+            Normalized lowercase code string with comments, whitespace,
+            and string literals removed.
+        """
         # Remove comments
         code = re.sub(r'//.*?$', '', code, flags=re.MULTILINE)
         code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
@@ -115,7 +131,18 @@ class ComplianceGuard:
         return code.strip().lower()
 
     def _calculate_similarity(self, text1: str, text2: str) -> float:
-        """Calculate similarity ratio between two texts."""
+        """Calculate similarity ratio between two texts.
+
+        Uses difflib.SequenceMatcher on normalized code to compute a
+        similarity ratio.
+
+        Args:
+            text1: First text to compare.
+            text2: Second text to compare.
+
+        Returns:
+            Similarity ratio between 0.0 (no similarity) and 1.0 (identical).
+        """
         norm1 = self._normalize_code(text1)
         norm2 = self._normalize_code(text2)
 
@@ -125,7 +152,17 @@ class ComplianceGuard:
         return difflib.SequenceMatcher(None, norm1, norm2).ratio()
 
     def _check_suspicious_patterns(self, content: str) -> list[str]:
-        """Check for suspicious patterns in generated code."""
+        """Check for suspicious patterns in generated code.
+
+        Searches for patterns that indicate code may have been copied
+        from decompiled sources (e.g., decompiler signatures).
+
+        Args:
+            content: Source code content to check.
+
+        Returns:
+            List of suspicious regex patterns that were matched.
+        """
         found = []
         for pattern in self.SUSPICIOUS_PATTERNS:
             if re.search(pattern, content, re.IGNORECASE):
@@ -133,7 +170,14 @@ class ComplianceGuard:
         return found
 
     def _compute_content_hash(self, content: str) -> str:
-        """Compute hash of content."""
+        """Compute hash of content.
+
+        Args:
+            content: String content to hash.
+
+        Returns:
+            SHA-256 hex digest of the content.
+        """
         return hashlib.sha256(content.encode()).hexdigest()
 
     async def check_artifact_similarity(
@@ -142,7 +186,24 @@ class ComplianceGuard:
         decompiled_samples: list[str],
         artifact_path: str,
     ) -> tuple[float, list[ComplianceViolation]]:
-        """Check if generated content is too similar to decompiled source."""
+        """Check if generated content is too similar to decompiled source.
+
+        Compares generated code against decompiled samples to detect
+        potential code copying violations.
+
+        Args:
+            generated_content: The generated source code to check.
+            decompiled_samples: List of decompiled source code samples to
+                compare against.
+            artifact_path: Path to the artifact being checked (for violation
+                reporting).
+
+        Returns:
+            A tuple containing:
+                - Maximum similarity ratio found across all samples.
+                - List of compliance violations for samples exceeding the
+                  similarity threshold.
+        """
         violations = []
         max_similarity = 0.0
 
@@ -171,7 +232,19 @@ class ComplianceGuard:
         content: str,
         artifact_path: str,
     ) -> list[ComplianceViolation]:
-        """Check for suspicious content in generated code."""
+        """Check for suspicious content in generated code.
+
+        Scans content for patterns that suggest code may have been
+        copied from decompiled sources.
+
+        Args:
+            content: The source code content to check.
+            artifact_path: Path to the artifact being checked (for violation
+                reporting).
+
+        Returns:
+            List of compliance violations for any suspicious patterns found.
+        """
         violations = []
 
         patterns_found = self._check_suspicious_patterns(content)
@@ -191,7 +264,19 @@ class ComplianceGuard:
         self,
         storage_prefix: str,
     ) -> list[ComplianceViolation]:
-        """Verify that no decompiled source is persisted in storage."""
+        """Verify that no decompiled source is persisted in storage.
+
+        Scans storage for files with suspicious extensions or directory
+        patterns that indicate decompiled source code.
+
+        Args:
+            storage_prefix: Storage key prefix to scan for persisted
+                decompiled artifacts.
+
+        Returns:
+            List of compliance violations for any persisted decompiled
+            source artifacts found.
+        """
         violations = []
 
         # Check for common decompiled file patterns
@@ -341,7 +426,16 @@ class ComplianceGuard:
             return ServiceResult.fail(str(e))
 
     async def audit_run(self, run_id: str) -> ComplianceReport | None:
-        """Retrieve compliance report for a run."""
+        """Retrieve compliance report for a run.
+
+        Args:
+            run_id: The unique identifier of the run to retrieve the
+                compliance report for.
+
+        Returns:
+            The compliance report if found, or None if no report exists
+            for the given run.
+        """
         try:
             key = f"compliance/{run_id}/compliance_report.json"
             return await self.storage.load_model(key, ComplianceReport)

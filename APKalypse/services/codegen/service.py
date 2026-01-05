@@ -62,12 +62,23 @@ class CodegenService:
     """
 
     def __init__(self, storage: StorageBackend) -> None:
-        """Initialize the codegen service."""
+        """Initialize the codegen service.
+
+        Args:
+            storage: Storage backend for persisting generated files.
+        """
         self.storage = storage
         self.impl_agent = AndroidImplementationAgent()
 
     def _create_root_build_gradle(self, project: AndroidProject) -> str:
-        """Generate root build.gradle.kts content."""
+        """Generate root build.gradle.kts content.
+
+        Args:
+            project: The Android project configuration.
+
+        Returns:
+            The content of the root build.gradle.kts file.
+        """
         # Use KSP version compatible with Kotlin 1.9.24
         ksp_version = "1.9.24-1.0.20"
         return f'''// Top-level build file for {project.project_name}
@@ -86,7 +97,14 @@ tasks.register("clean", Delete::class) {{
 '''
 
     def _create_settings_gradle(self, project: AndroidProject) -> str:
-        """Generate settings.gradle.kts content."""
+        """Generate settings.gradle.kts content.
+
+        Args:
+            project: The Android project configuration.
+
+        Returns:
+            The content of the settings.gradle.kts file.
+        """
         module_includes = "\n".join([
             f'include("{m.module_name}")'
             for m in project.modules
@@ -114,7 +132,11 @@ rootProject.name = "{project.project_name}"
 '''
 
     def _create_gradle_properties(self) -> str:
-        """Generate gradle.properties content."""
+        """Generate gradle.properties content.
+
+        Returns:
+            The content of the gradle.properties file with default settings.
+        """
         return '''# Project-wide Gradle settings
 org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
 org.gradle.parallel=true
@@ -135,7 +157,15 @@ kotlin.compiler.extension.version=1.5.14
 '''
 
     def _create_module_build_gradle(self, module: GradleModule, package_name: str) -> str:
-        """Generate module build.gradle.kts content."""
+        """Generate module build.gradle.kts content.
+
+        Args:
+            module: The Gradle module configuration.
+            package_name: The base package name for the project.
+
+        Returns:
+            The content of the module's build.gradle.kts file.
+        """
         is_app = module.module_type == "android-app"
 
         plugins_list = [f'id("{p.plugin_id}")' for p in module.plugins]
@@ -222,7 +252,14 @@ dependencies {{
 '''
 
     def _create_app_module(self, package_name: str) -> GradleModule:
-        """Create the main app module."""
+        """Create the main app module.
+
+        Args:
+            package_name: The base package name for the application.
+
+        Returns:
+            A GradleModule configured as the main Android application module.
+        """
         return GradleModule(
             module_name=":app",
             module_path="app",
@@ -273,7 +310,14 @@ dependencies {{
         )
 
     def _create_core_ui_module(self, package_name: str) -> GradleModule:
-        """Create the core UI module."""
+        """Create the core UI module.
+
+        Args:
+            package_name: The base package name for the application.
+
+        Returns:
+            A GradleModule configured for shared UI components and theming.
+        """
         return GradleModule(
             module_name=":core:ui",
             module_path="core/ui",
@@ -295,7 +339,14 @@ dependencies {{
         )
 
     def _create_core_domain_module(self, package_name: str) -> GradleModule:
-        """Create the core domain module."""
+        """Create the core domain module.
+
+        Args:
+            package_name: The base package name for the application.
+
+        Returns:
+            A GradleModule configured for domain logic and use cases.
+        """
         return GradleModule(
             module_name=":core:domain",
             module_path="core/domain",
@@ -320,7 +371,14 @@ dependencies {{
         )
 
     def _create_core_data_module(self, package_name: str) -> GradleModule:
-        """Create the core data module."""
+        """Create the core data module.
+
+        Args:
+            package_name: The base package name for the application.
+
+        Returns:
+            A GradleModule configured for data access and persistence.
+        """
         return GradleModule(
             module_name=":core:data",
             module_path="core/data",
@@ -363,7 +421,15 @@ dependencies {{
         )
 
     def _generate_application_class(self, package_name: str, app_name: str) -> KotlinFile:
-        """Generate the Application class."""
+        """Generate the Application class.
+
+        Args:
+            package_name: The base package name for the application.
+            app_name: The display name of the application.
+
+        Returns:
+            A KotlinFile containing the Hilt-annotated Application class.
+        """
         class_name = self._to_pascal_case(app_name) + "Application"
 
         content = f'''package {package_name}
@@ -393,7 +459,15 @@ class {class_name} : Application() {{
         )
 
     def _generate_main_activity(self, package_name: str, app_name: str) -> KotlinFile:
-        """Generate the MainActivity."""
+        """Generate the MainActivity.
+
+        Args:
+            package_name: The base package name for the application.
+            app_name: The display name of the application.
+
+        Returns:
+            A KotlinFile containing the main entry point Activity.
+        """
         content = f'''package {package_name}
 
 import android.os.Bundle
@@ -437,7 +511,15 @@ class MainActivity : ComponentActivity() {{
         )
 
     def _generate_navigation(self, package_name: str, screens: list[Any]) -> KotlinFile:
-        """Generate the navigation graph."""
+        """Generate the navigation graph.
+
+        Args:
+            package_name: The base package name for the application.
+            screens: List of screen specifications to include in navigation.
+
+        Returns:
+            A KotlinFile containing the navigation routes and NavHost composable.
+        """
         screen_routes = []
         screen_composables = []
 
@@ -497,7 +579,14 @@ fun AppNavigation() {{
         )
 
     def _generate_theme(self, package_name: str) -> KotlinFile:
-        """Generate the theme file."""
+        """Generate the theme file.
+
+        Args:
+            package_name: The base package name for the application.
+
+        Returns:
+            A KotlinFile containing the Material3 theme composable.
+        """
         content = f'''package {package_name}.core.ui.theme
 
 import android.app.Activity
@@ -570,7 +659,14 @@ fun AppTheme(
         )
 
     def _generate_color(self, package_name: str) -> KotlinFile:
-        """Generate the color file."""
+        """Generate the color file.
+
+        Args:
+            package_name: The base package name for the application.
+
+        Returns:
+            A KotlinFile containing the color palette definitions.
+        """
         content = f'''package {package_name}.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
@@ -592,7 +688,14 @@ val Pink40 = Color(0xFF7D5260)
         )
 
     def _generate_typography(self, package_name: str) -> KotlinFile:
-        """Generate the typography file."""
+        """Generate the typography file.
+
+        Args:
+            package_name: The base package name for the application.
+
+        Returns:
+            A KotlinFile containing the typography style definitions.
+        """
         content = f'''package {package_name}.core.ui.theme
 
 import androidx.compose.material3.Typography
@@ -634,7 +737,15 @@ val Typography = Typography(
         )
 
     def _generate_home_screen(self, package_name: str, app_name: str) -> KotlinFile:
-        """Generate the home screen."""
+        """Generate the home screen.
+
+        Args:
+            package_name: The base package name for the application.
+            app_name: The display name of the application.
+
+        Returns:
+            A KotlinFile containing the home screen composable with UI state handling.
+        """
         content = f'''package {package_name}.feature.home
 
 import androidx.compose.foundation.layout.*
@@ -728,7 +839,14 @@ private fun HomeScreenPreview() {{
         )
 
     def _generate_home_viewmodel(self, package_name: str) -> KotlinFile:
-        """Generate the home view model."""
+        """Generate the home view model.
+
+        Args:
+            package_name: The base package name for the application.
+
+        Returns:
+            A KotlinFile containing the HomeViewModel with UI state management.
+        """
         content = f'''package {package_name}.feature.home
 
 import androidx.lifecycle.ViewModel
@@ -794,7 +912,15 @@ class HomeViewModel @Inject constructor() : ViewModel() {{
         )
 
     def _generate_manifest(self, package_name: str, app_name: str) -> ResourceFile:
-        """Generate AndroidManifest.xml."""
+        """Generate AndroidManifest.xml.
+
+        Args:
+            package_name: The base package name for the application.
+            app_name: The display name of the application.
+
+        Returns:
+            A ResourceFile containing the AndroidManifest.xml content.
+        """
         app_class = self._to_pascal_case(app_name) + "Application"
 
         content = f'''<?xml version="1.0" encoding="utf-8"?>
@@ -834,7 +960,14 @@ class HomeViewModel @Inject constructor() : ViewModel() {{
         )
 
     def _generate_strings_xml(self, app_name: str) -> ResourceFile:
-        """Generate strings.xml."""
+        """Generate strings.xml.
+
+        Args:
+            app_name: The display name of the application.
+
+        Returns:
+            A ResourceFile containing the strings.xml content.
+        """
         content = f'''<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">{app_name}</string>
@@ -848,7 +981,11 @@ class HomeViewModel @Inject constructor() : ViewModel() {{
         )
 
     def _generate_themes_xml(self) -> ResourceFile:
-        """Generate themes.xml."""
+        """Generate themes.xml.
+
+        Returns:
+            A ResourceFile containing the themes.xml content.
+        """
         content = '''<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.App" parent="android:Theme.Material.Light.NoActionBar" />
@@ -862,12 +999,26 @@ class HomeViewModel @Inject constructor() : ViewModel() {{
         )
 
     def _to_pascal_case(self, text: str) -> str:
-        """Convert text to PascalCase."""
+        """Convert text to PascalCase.
+
+        Args:
+            text: The input text to convert.
+
+        Returns:
+            The text converted to PascalCase format.
+        """
         words = re.split(r'[\s_\-]+', text)
         return ''.join(word.capitalize() for word in words)
 
     def _to_camel_case(self, text: str) -> str:
-        """Convert text to camelCase."""
+        """Convert text to camelCase.
+
+        Args:
+            text: The input text to convert.
+
+        Returns:
+            The text converted to camelCase format.
+        """
         pascal = self._to_pascal_case(text)
         return pascal[0].lower() + pascal[1:] if pascal else ""
 
@@ -961,7 +1112,14 @@ class HomeViewModel @Inject constructor() : ViewModel() {{
             return ServiceResult.fail(str(e))
 
     def _create_gradle_wrapper_properties(self, gradle_version: str) -> str:
-        """Generate gradle-wrapper.properties content."""
+        """Generate gradle-wrapper.properties content.
+
+        Args:
+            gradle_version: The Gradle distribution version to use.
+
+        Returns:
+            The content of the gradle-wrapper.properties file.
+        """
         return f'''distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
 distributionUrl=https\\://services.gradle.org/distributions/gradle-{gradle_version}-bin.zip
@@ -972,7 +1130,11 @@ zipStorePath=wrapper/dists
 '''
 
     def _create_gradlew_bat(self) -> str:
-        """Generate gradlew.bat content for Windows."""
+        """Generate gradlew.bat content for Windows.
+
+        Returns:
+            The content of the gradlew.bat script.
+        """
         return r'''@rem
 @rem Copyright 2015 the original author or authors.
 @rem
@@ -1068,7 +1230,11 @@ if "%OS%"=="Windows_NT" endlocal
 '''
 
     def _create_gradlew(self) -> str:
-        """Generate gradlew shell script for Unix/Mac."""
+        """Generate gradlew shell script for Unix/Mac.
+
+        Returns:
+            The content of the gradlew shell script.
+        """
         return r'''#!/bin/sh
 
 #
@@ -1263,10 +1429,16 @@ exec "$JAVACMD" "$@"
 
     async def _download_gradle_wrapper_jar(self, gradle_version: str) -> bytes:
         """Download the gradle-wrapper.jar from the official Gradle GitHub repository.
-        
+
         The gradle-wrapper.jar is a standalone bootstrap JAR maintained in the Gradle
         GitHub repository. This JAR is version-independent - the actual Gradle version
         is determined by gradle-wrapper.properties.
+
+        Args:
+            gradle_version: The Gradle version (used for logging, not for download).
+
+        Returns:
+            The binary content of the gradle-wrapper.jar, or empty bytes if download fails.
         """
         # Download from Gradle's GitHub repository - the wrapper jar is version-independent
         # We use the raw GitHub URL for the gradle-wrapper.jar
@@ -1288,7 +1460,12 @@ exec "$JAVACMD" "$@"
         return b""
 
     async def _write_project_to_storage(self, project: AndroidProject, output_dir: str) -> None:
-        """Write project files to storage."""
+        """Write project files to storage.
+
+        Args:
+            project: The Android project to persist.
+            output_dir: The storage directory path for the generated files.
+        """
         # Root files
         await self.storage.store_text(f"{output_dir}/build.gradle.kts", project.root_build_gradle)
         await self.storage.store_text(f"{output_dir}/settings.gradle.kts", project.settings_gradle)

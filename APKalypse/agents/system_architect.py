@@ -87,21 +87,47 @@ class SystemArchitectAgent(Agent[ArchitectInput, ArchitectOutput]):
 
     @property
     def name(self) -> str:
+        """Return the agent's unique identifier.
+
+        Returns:
+            str: The agent name 'system_architect'.
+        """
         return self.NAME
 
     @property
     def description(self) -> str:
+        """Return a human-readable description of the agent.
+
+        Returns:
+            str: Description of the agent's purpose.
+        """
         return "Designs technical architecture for Android applications"
 
     @property
     def input_type(self) -> type[ArchitectInput]:
+        """Return the Pydantic model class for agent input.
+
+        Returns:
+            type[ArchitectInput]: The ArchitectInput model class.
+        """
         return ArchitectInput
 
     @property
     def output_type(self) -> type[ArchitectOutput]:
+        """Return the Pydantic model class for agent output.
+
+        Returns:
+            type[ArchitectOutput]: The ArchitectOutput model class.
+        """
         return ArchitectOutput
 
     def get_prompt_template(self) -> PromptTemplate:
+        """Return the prompt template for LLM interactions.
+
+        Returns:
+            PromptTemplate: Template containing system and user prompts
+                for generating architecture designs.
+        """
         return PromptTemplate(
             template_id="system_architect_v1",
             version="1.0.0",
@@ -209,6 +235,14 @@ Generate a comprehensive architecture design as JSON:
         )
 
     def prepare_input(self, input_data: ArchitectInput) -> dict[str, Any]:
+        """Transform structured input into prompt template variables.
+
+        Args:
+            input_data: The validated input containing app specifications.
+
+        Returns:
+            dict[str, Any]: Dictionary of template variables for prompt formatting.
+        """
         import json
         return {
             "app_name": input_data.app_name,
@@ -220,6 +254,14 @@ Generate a comprehensive architecture design as JSON:
         }
 
     def validate_output(self, output: ArchitectOutput) -> list[str]:
+        """Validate the generated architecture output.
+
+        Args:
+            output: The architecture output to validate.
+
+        Returns:
+            list[str]: List of warning messages for any issues found.
+        """
         warnings = []
         if not output.modules:
             warnings.append("No modules defined")

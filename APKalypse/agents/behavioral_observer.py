@@ -61,21 +61,47 @@ class BehavioralObserverAgent(Agent[BehavioralObserverInput, BehavioralObserverO
 
     @property
     def name(self) -> str:
+        """Get the agent name.
+
+        Returns:
+            str: The unique identifier for this agent.
+        """
         return self.NAME
 
     @property
     def description(self) -> str:
+        """Get the agent description.
+
+        Returns:
+            str: A human-readable description of the agent's purpose.
+        """
         return "Observes UI states and extracts behavioral information"
 
     @property
     def input_type(self) -> type[BehavioralObserverInput]:
+        """Get the input type for this agent.
+
+        Returns:
+            type[BehavioralObserverInput]: The Pydantic model class for input validation.
+        """
         return BehavioralObserverInput
 
     @property
     def output_type(self) -> type[BehavioralObserverOutput]:
+        """Get the output type for this agent.
+
+        Returns:
+            type[BehavioralObserverOutput]: The Pydantic model class for output validation.
+        """
         return BehavioralObserverOutput
 
     def get_prompt_template(self) -> PromptTemplate:
+        """Get the prompt template for UI behavioral analysis.
+
+        Returns:
+            PromptTemplate: The template containing system and user prompts
+                for analyzing Android UI states.
+        """
         return PromptTemplate(
             template_id="behavioral_observer_v1",
             version="1.0.0",
@@ -133,6 +159,19 @@ Provide your observation as a JSON object with the following structure:
         )
 
     def prepare_input(self, input_data: BehavioralObserverInput) -> dict[str, Any]:
+        """Prepare input data for the prompt template.
+
+        Transforms the structured input into a dictionary suitable for
+        template variable substitution, with truncation and formatting.
+
+        Args:
+            input_data: The validated input containing screen hierarchy,
+                screenshot description, and navigation context.
+
+        Returns:
+            dict[str, Any]: A dictionary with keys matching the template
+                variables, ready for prompt formatting.
+        """
         return {
             "screen_hierarchy": input_data.screen_hierarchy[:8000],  # Truncate if needed
             "screen_screenshot_description": input_data.screen_screenshot_description,
@@ -142,6 +181,17 @@ Provide your observation as a JSON object with the following structure:
         }
 
     def validate_output(self, output: BehavioralObserverOutput) -> list[str]:
+        """Validate the agent output and return any warnings.
+
+        Checks the output for quality issues such as low confidence
+        scores or missing primary elements.
+
+        Args:
+            output: The behavioral observation output to validate.
+
+        Returns:
+            list[str]: A list of warning messages. Empty if no issues found.
+        """
         warnings = []
         if output.confidence < 0.5:
             warnings.append(f"Low confidence observation: {output.confidence}")

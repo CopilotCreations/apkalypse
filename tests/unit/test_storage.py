@@ -12,7 +12,14 @@ class TestLocalStorageBackend:
     """Tests for local filesystem storage."""
 
     async def test_store_and_load_bytes(self, temp_dir):
-        """Test storing and loading bytes."""
+        """Test storing and loading bytes.
+
+        Verifies that binary data can be stored and retrieved correctly
+        from the local storage backend.
+
+        Args:
+            temp_dir: Pytest fixture providing a temporary directory path.
+        """
         storage = LocalStorageBackend(temp_dir)
         
         data = b"Hello, World!"
@@ -25,7 +32,14 @@ class TestLocalStorageBackend:
         assert loaded == data
 
     async def test_store_and_load_text(self, temp_dir):
-        """Test storing and loading text."""
+        """Test storing and loading text.
+
+        Verifies that text content can be stored and retrieved correctly
+        from the local storage backend.
+
+        Args:
+            temp_dir: Pytest fixture providing a temporary directory path.
+        """
         storage = LocalStorageBackend(temp_dir)
         
         content = "Hello, World!"
@@ -36,7 +50,14 @@ class TestLocalStorageBackend:
         assert loaded == content
 
     async def test_store_and_load_model(self, temp_dir):
-        """Test storing and loading Pydantic models."""
+        """Test storing and loading Pydantic models.
+
+        Verifies that Pydantic models can be serialized to JSON, stored,
+        and deserialized back correctly.
+
+        Args:
+            temp_dir: Pytest fixture providing a temporary directory path.
+        """
         storage = LocalStorageBackend(temp_dir)
         
         model = ScreenModel(
@@ -53,7 +74,14 @@ class TestLocalStorageBackend:
         assert loaded.screen_name == model.screen_name
 
     async def test_exists(self, temp_dir):
-        """Test checking if key exists."""
+        """Test checking if key exists.
+
+        Verifies that the exists method correctly reports whether a key
+        is present in storage before and after storing content.
+
+        Args:
+            temp_dir: Pytest fixture providing a temporary directory path.
+        """
         storage = LocalStorageBackend(temp_dir)
         
         key = "test/exists.txt"
@@ -63,7 +91,14 @@ class TestLocalStorageBackend:
         assert await storage.exists(key)
 
     async def test_delete(self, temp_dir):
-        """Test deleting a key."""
+        """Test deleting a key.
+
+        Verifies that stored content can be deleted and that deleting
+        a non-existent key returns False.
+
+        Args:
+            temp_dir: Pytest fixture providing a temporary directory path.
+        """
         storage = LocalStorageBackend(temp_dir)
         
         key = "test/delete.txt"
@@ -79,7 +114,14 @@ class TestLocalStorageBackend:
         assert not deleted
 
     async def test_list_keys(self, temp_dir):
-        """Test listing keys."""
+        """Test listing keys.
+
+        Verifies that all keys can be listed and that listing can be
+        filtered by prefix to return only keys in a specific directory.
+
+        Args:
+            temp_dir: Pytest fixture providing a temporary directory path.
+        """
         storage = LocalStorageBackend(temp_dir)
         
         await storage.store_text("dir1/file1.txt", "content1")
@@ -93,7 +135,14 @@ class TestLocalStorageBackend:
         assert len(dir1_keys) == 2
 
     async def test_get_metadata(self, temp_dir):
-        """Test getting metadata."""
+        """Test getting metadata.
+
+        Verifies that custom metadata can be stored with content and
+        retrieved, along with auto-generated metadata like hash and timestamp.
+
+        Args:
+            temp_dir: Pytest fixture providing a temporary directory path.
+        """
         storage = LocalStorageBackend(temp_dir)
         
         key = "test/meta.txt"
@@ -106,7 +155,14 @@ class TestLocalStorageBackend:
         assert "_stored_at" in meta
 
     async def test_get_local_path(self, temp_dir):
-        """Test getting local path."""
+        """Test getting local path.
+
+        Verifies that the local filesystem path can be retrieved for
+        stored content and that non-existent keys return None.
+
+        Args:
+            temp_dir: Pytest fixture providing a temporary directory path.
+        """
         storage = LocalStorageBackend(temp_dir)
         
         key = "test/path.txt"
@@ -120,7 +176,14 @@ class TestLocalStorageBackend:
         assert storage.get_local_path("nonexistent") is None
 
     async def test_compute_hash(self, temp_dir):
-        """Test hash computation."""
+        """Test hash computation.
+
+        Verifies that the hash computation is deterministic and produces
+        a valid SHA-256 hex string of 64 characters.
+
+        Args:
+            temp_dir: Pytest fixture providing a temporary directory path.
+        """
         storage = LocalStorageBackend(temp_dir)
         
         data = b"test data"
@@ -131,7 +194,14 @@ class TestLocalStorageBackend:
         assert len(hash1) == 64  # SHA-256 hex length
 
     async def test_path_traversal_prevention(self, temp_dir):
-        """Test that path traversal is prevented."""
+        """Test that path traversal is prevented.
+
+        Verifies that malicious path traversal attempts (e.g., ../../../)
+        are handled safely and content is stored within the base path.
+
+        Args:
+            temp_dir: Pytest fixture providing a temporary directory path.
+        """
         storage = LocalStorageBackend(temp_dir)
         
         # Attempt path traversal
